@@ -8,7 +8,7 @@ vars:
   DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
-    - main.c
+    - seashell.c
 
 # Inputs
 # - REPO_NAME
@@ -30,7 +30,7 @@ tasks:
     deps:
       - build
       # - build:sanitize
-      # - run
+      # - run # we don't want task to process our process
 
   dependencies:
     deps:
@@ -40,7 +40,7 @@ tasks:
   dependencies:logger:
     vars:
       REPO_NAME: c-logger
-      DYLIB_VERSION: 0.0.7
+      DYLIB_VERSION: 0.0.9
       DYLIB_NAME: logger
     cmds:
       - sudo -v
