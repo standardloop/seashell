@@ -4,6 +4,8 @@
 #include <signal.h> // signal polling for graceful shutdown
 #include <errno.h>
 
+#include <termios.h>
+
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
 
@@ -15,13 +17,34 @@ void seaShellSigHandler(int);
 void seaShellInteractive();
 void seaShellNoInteractive();
 
+static struct termios oldtio, newtio;
+
+/* Initialize terminal to non-canonical and no-echo mode */
+void initTerminal();
+void initTerminal()
+{
+    tcgetattr(STDIN_FILENO, &oldtio);          // Save current terminal settings
+    newtio = oldtio;                           // Make a copy
+    newtio.c_lflag &= ~(ICANON | ECHO);        // Disable canonical mode and echo
+    newtio.c_cc[VMIN] = 1;                     // Read at least 1 character
+    newtio.c_cc[VTIME] = 0;                    // No timeout (wait indefinitely)
+    tcsetattr(STDIN_FILENO, TCSANOW, &newtio); // Apply new settings immediately
+}
+
+/* Restore terminal to original settings */
+void restoreTerminal();
+void restoreTerminal()
+{
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldtio);
+}
+
 // NOTE: SIGKILL cannot be trapped
 void seaShellSigHandler(int signum)
 {
     switch (signum)
     {
     case SIGINT:
-        // Log(ERROR, "SIGINT received!");
+        Log(ERROR, "SIGINT received!");
         // this only cancel the process that seashell is running
         break;
     case SIGTERM:
@@ -30,6 +53,7 @@ void seaShellSigHandler(int signum)
     default:
         break;
     }
+    restoreTerminal();
     seashell_running = false;
 }
 
@@ -39,6 +63,8 @@ static inline void displayPrompt();
 #define ANSI_COLOR_YELLOW "\x1b[33m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
+#define ANSI_STYLE_BOLD "\e[1m"
+#define ANSI_STYLE_ITALICS "\e[3m"
 
 static inline void displayPrompt()
 {
@@ -71,20 +97,60 @@ char *readLine()
     return (line);
 }
 
+#define ESC_CHAR 27
 void seaShellInteractive()
 {
+    char c;
     Log(INFO, "Running Interactive");
+    initTerminal();
+
     while (seashell_running)
     {
         displayPrompt();
-        char *line = readLine();
-        Log(TRACE, "line: %s", line);
-        // parse input
-        // spawn child process
-        // wait for child process to finish
-        // free line
-        // do everything again
+        fflush(stdout);
+        c = getchar();
+
+        if (c == 'q')
+        {
+            break;
+        }
+        else if (c == 27)
+        {
+            if (getchar() == '[')
+            {
+                switch (getchar())
+                {
+                case 'A':
+                    Log(INFO, "Up arrow");
+                    break;
+                case 'B':
+                    Log(INFO, "Down arrow");
+                    break;
+                case 'C':
+                    Log(INFO, "Right arrow");
+                    break;
+                case 'D':
+                    Log(INFO, "Left arrow");
+                    break;
+                }
+            }
+        }
+        // else
+        // {
+        //     printf("\n\r");
+        // }
+        else if (c == '\n')
+        {
+            printf("\n\r");
+            // run command
+        }
+        else
+        {
+            printf("%c", c);
+            printf("\n\r");
+        }
     }
+    restoreTerminal();
 }
 
 void seaShellNoInteractive()
