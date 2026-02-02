@@ -114,7 +114,9 @@ void seaShellInteractive()
             {
                 i--;
                 // printf("i = %d\n", i);
-                if (i <= 0)
+                // this first if should never happen
+                // TODO add assert here
+                if (i < 0)
                 {
                     i = 0;
                     clearBuffer(buffer, LINE_BUFFER_SIZE);
