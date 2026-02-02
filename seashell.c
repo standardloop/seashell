@@ -69,38 +69,29 @@ static inline void displayPrompt();
 static inline void displayPrompt()
 {
     printf(ANSI_COLOR_GREEN "➜ seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET);
-    // printf("seashell-v0.0.0 -> ");
 }
 
-char *readLine();
-
-char *readLine()
+void clearBuffer(char *, int);
+void clearBuffer(char *buffer, int size)
 {
-    // getline will allocation memory for us
-    char *line = NULL;
-    size_t bufsize = 0;
-
-    if (getline(&line, &bufsize, stdin) == -1)
+    if (buffer == NULL || size < 0)
     {
-        if (feof(stdin))
-        {
-            free(line);
-            exit(EXIT_SUCCESS);
-        }
-        else
-        {
-            free(line); /* avoid memory leaks when getline fails */
-            perror("error while reading the line from stdin");
-            exit(EXIT_FAILURE);
-        }
+        return;
     }
-    return (line);
+
+    for (int reset_index = 0; reset_index < size - 1; reset_index++)
+    {
+        buffer[reset_index] = NULL_CHAR;
+    }
 }
 
 #define ESC_CHAR 27
+#define LINE_BUFFER_SIZE 100
+#define BACKSPACE_CHAR 127
 void seaShellInteractive()
 {
     char c;
+    int i;
     Log(INFO, "Running Interactive");
     initTerminal();
 
@@ -108,47 +99,85 @@ void seaShellInteractive()
     {
         displayPrompt();
         fflush(stdout);
-        c = getchar();
+        char buffer[LINE_BUFFER_SIZE];
+        buffer[0] = NULL_CHAR;
+        i = 0;
+        while (ALWAYS)
+        {
+            c = getchar();
 
-        if (c == 'q')
-        {
-            break;
-        }
-        else if (c == 27)
-        {
-            if (getchar() == '[')
+            if (c == EOF || c == NEWLINE_CHAR || c == NULL_CHAR || i == LINE_BUFFER_SIZE - 1)
             {
-                switch (getchar())
+                break;
+            }
+            else if (c == BACKSPACE_CHAR)
+            {
+                i--;
+                // printf("i = %d\n", i);
+                if (i <= 0)
                 {
-                case 'A':
-                    Log(INFO, "Up arrow");
-                    break;
-                case 'B':
-                    Log(INFO, "Down arrow");
-                    break;
-                case 'C':
-                    Log(INFO, "Right arrow");
-                    break;
-                case 'D':
-                    Log(INFO, "Left arrow");
-                    break;
+                    i = 0;
+                    clearBuffer(buffer, LINE_BUFFER_SIZE);
                 }
+                else
+                {
+                    buffer[i] = NULL_CHAR;
+                    printf("\b \b");
+                }
+
+                // Log(TRACE, "backspace char");
+            }
+            else
+            {
+                buffer[i] = (char)c;
+                printf("%c", c);
+                i++;
             }
         }
-        // else
+        buffer[i] = NULL_CHAR;
+        printf("\nBuffer = %s\n", buffer);
+        printf("\n\r");
+        clearBuffer(buffer, LINE_BUFFER_SIZE);
+
+        // if (c == 'q')
+        // {
+        //     break;
+        // }
+        // else if (c == ESC_CHAR)
+        // {
+        //     if (getchar() == '[')
+        //     {
+        //         switch (getchar())
+        //         {
+        //         case 'A':
+        //             Log(INFO, "Up arrow");
+        //             break;
+        //         case 'B':
+        //             Log(INFO, "Down arrow");
+        //             break;
+        //         case 'C':
+        //             Log(INFO, "Right arrow");
+        //             break;
+        //         case 'D':
+        //             Log(INFO, "Left arrow");
+        //             break;
+        //         }
+        //     }
+        // }
+        // // else
+        // // {
+        // //     printf("\n\r");
+        // // }
+        // else if (c == '\n')
         // {
         //     printf("\n\r");
+        //     // run command
         // }
-        else if (c == '\n')
-        {
-            printf("\n\r");
-            // run command
-        }
-        else
-        {
-            printf("%c", c);
-            printf("\n\r");
-        }
+        // else
+        // {
+        //     printf("%c", c);
+        //     printf("\n\r");
+        // }
     }
     restoreTerminal();
 }
