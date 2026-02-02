@@ -9,6 +9,9 @@ vars:
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
     - seashell.c
+    - cmds/cmds.c
+    - cmds/exit.c
+    - cmds/help.c
 
 # Inputs
 # - REPO_NAME

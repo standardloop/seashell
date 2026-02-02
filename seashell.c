@@ -2,68 +2,31 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h> // signal polling for graceful shutdown
-#include <errno.h>
 
-#include <termios.h>
+#include <dirent.h> // directory
+
+#include <termios.h> // handle terminal behavior
 
 #include "./seashell.h"
+#include "./cmds/cmds.h"
 
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
 
 #define CHILD_PID 0
 
-volatile sig_atomic_t seashell_running = true;
+volatile sig_atomic_t GLOBAL_seashell_running = true;
 
 void seaShellSigHandler(int);
-void seaShellInteractive();
+int seaShellInteractive();
 void seaShellNoInteractive();
-static inline void displayPrompt();
+static inline void displayPrompt(int);
 
 static struct termios oldtio, newtio;
 
-typedef void(seashellFunction)(void);
-
-void seashellHelp();
-void seashellHelp()
-{
-    printf("seashell version: %s\n", SEASHELL_VERSION);
-}
-
-void seashellExit();
-void seashellExit()
-{
-    seashell_running = false;
-}
-
-seashellFunction *functionStringToFunction(char *function_name)
-{
-    const int seashellFunctionListLength = 4;
-    char *seashellFunctionList[] = {
-        "exit",
-        "cd",
-        "env",
-        "help",
-    };
-    for (int i = 0; i < seashellFunctionListLength; i++)
-    {
-        if (strcmp(seashellFunctionList[i], function_name) == 0)
-        {
-            switch (i)
-            {
-            case 0:
-                return seashellExit;
-            case 1:
-                return NULL;
-            case 2:
-                return NULL;
-            case 3:
-                return seashellHelp;
-            }
-        }
-    }
-    return NULL;
-}
+// TODO
+// struct is more clean to group
+typedef int(seashellFunction)(StringArr *);
 
 /* Initialize terminal to non-canonical and no-echo mode */
 void initTerminal();
@@ -100,9 +63,10 @@ void seaShellSigHandler(int signum)
         break;
     }
     restoreTerminal();
-    seashell_running = false;
+    GLOBAL_seashell_running = false;
 }
 
+#define ANSI_COLOR_RED "\x1b[31m"
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_YELLOW "\x1b[33m"
 #define ANSI_COLOR_RESET "\x1b[0m"
@@ -110,9 +74,23 @@ void seaShellSigHandler(int signum)
 #define ANSI_STYLE_BOLD "\e[1m"
 #define ANSI_STYLE_ITALICS "\e[3m"
 
-static inline void displayPrompt()
+static inline void displayPrompt(int last_status)
 {
-    printf(ANSI_COLOR_GREEN "➜ seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET);
+    // TODO
+    // read settings from config file
+    // example, color, showing directory, etc...
+    char cwd[1024];
+    // TODO NULL check
+    (void)getcwd(cwd, sizeof(cwd));
+
+    if (last_status == 0)
+    {
+        printf(ANSI_COLOR_GREEN "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
+    }
+    else
+    {
+        printf(ANSI_COLOR_RED "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
+    }
 }
 
 static void clearBuffer(char *, int);
@@ -143,27 +121,28 @@ static int runCommand(char *buffer)
 }
 
 #define ESC_CHAR 27
-#define LINE_BUFFER_SIZE 100
+#define COMMAND_BUFFER_SIZE 100
 #define BACKSPACE_CHAR 127
-void seaShellInteractive()
+int seaShellInteractive()
 {
     char c;
     int i;
     Log(INFO, "Running Interactive");
     initTerminal();
+    int last_status = 0;
 
-    while (seashell_running)
+    while (GLOBAL_seashell_running)
     {
-        displayPrompt();
+        displayPrompt(last_status);
         fflush(stdout);
-        char buffer[LINE_BUFFER_SIZE];
-        buffer[0] = NULL_CHAR;
+        char command_buffer[COMMAND_BUFFER_SIZE];
+        command_buffer[0] = NULL_CHAR;
         i = 0;
         while (ALWAYS)
         {
             c = getchar();
 
-            if (c == EOF || c == NEWLINE_CHAR || c == NULL_CHAR || i == LINE_BUFFER_SIZE - 1)
+            if (c == EOF || c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
             {
                 break;
             }
@@ -206,11 +185,11 @@ void seaShellInteractive()
                 if (i < 0)
                 {
                     i = 0;
-                    clearBuffer(buffer, LINE_BUFFER_SIZE);
+                    clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
                 }
                 else
                 {
-                    buffer[i] = NULL_CHAR;
+                    command_buffer[i] = NULL_CHAR;
                     printf("\b \b");
                 }
 
@@ -218,26 +197,32 @@ void seaShellInteractive()
             }
             else
             {
-                buffer[i] = (char)c;
+                command_buffer[i] = (char)c;
                 printf("%c", c);
                 i++;
             }
         }
-        buffer[i] = NULL_CHAR;
+        command_buffer[i] = NULL_CHAR;
         printf("\n\r");
-        seashellFunction *built_in = functionStringToFunction(buffer);
+        // need to parse though
+        // to get args for the built in functions
+        StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
+        PrintStringArr(buffer_seperated_by_spaces);
+        SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
         if (built_in != NULL)
         {
-            built_in();
+            last_status = built_in(buffer_seperated_by_spaces);
         }
         else
         {
-            printf("\nBuffer = %s\n", buffer);
-            runCommand(buffer);
+            printf("\nBuffer = %s\n", command_buffer);
+            runCommand(command_buffer);
         }
-        clearBuffer(buffer, LINE_BUFFER_SIZE);
+        clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+        FreeStringArr(buffer_seperated_by_spaces);
     }
     restoreTerminal();
+    return last_status;
 }
 
 void seaShellNoInteractive()
@@ -274,7 +259,7 @@ int main(int argc, char **argv)
 
     if (isatty(STDIN_FILENO) == 1)
     {
-        seaShellInteractive();
+        return seaShellInteractive();
     }
     else
     {

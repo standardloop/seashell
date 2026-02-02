@@ -1,6 +1,4 @@
 #ifndef STANDARDLOOP_SEASHELL_H
 #define STANDARDLOOP_SEASHELL_H
 
-#define SEASHELL_VERSION "v0.0.0"
-
 #endif
