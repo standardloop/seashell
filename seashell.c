@@ -6,6 +6,8 @@
 
 #include <termios.h>
 
+#include "./seashell.h"
+
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
 
@@ -16,8 +18,52 @@ volatile sig_atomic_t seashell_running = true;
 void seaShellSigHandler(int);
 void seaShellInteractive();
 void seaShellNoInteractive();
+static inline void displayPrompt();
 
 static struct termios oldtio, newtio;
+
+typedef void(seashellFunction)(void);
+
+void seashellHelp();
+void seashellHelp()
+{
+    printf("seashell version: %s\n", SEASHELL_VERSION);
+}
+
+void seashellExit();
+void seashellExit()
+{
+    seashell_running = false;
+}
+
+seashellFunction *functionStringToFunction(char *function_name)
+{
+    const int seashellFunctionListLength = 4;
+    char *seashellFunctionList[] = {
+        "exit",
+        "cd",
+        "env",
+        "help",
+    };
+    for (int i = 0; i < seashellFunctionListLength; i++)
+    {
+        if (strcmp(seashellFunctionList[i], function_name) == 0)
+        {
+            switch (i)
+            {
+            case 0:
+                return seashellExit;
+            case 1:
+                return NULL;
+            case 2:
+                return NULL;
+            case 3:
+                return seashellHelp;
+            }
+        }
+    }
+    return NULL;
+}
 
 /* Initialize terminal to non-canonical and no-echo mode */
 void initTerminal();
@@ -57,8 +103,6 @@ void seaShellSigHandler(int signum)
     seashell_running = false;
 }
 
-static inline void displayPrompt();
-
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_YELLOW "\x1b[33m"
 #define ANSI_COLOR_RESET "\x1b[0m"
@@ -71,8 +115,8 @@ static inline void displayPrompt()
     printf(ANSI_COLOR_GREEN "➜ seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET);
 }
 
-void clearBuffer(char *, int);
-void clearBuffer(char *buffer, int size)
+static void clearBuffer(char *, int);
+static void clearBuffer(char *buffer, int size)
 {
     if (buffer == NULL || size < 0)
     {
@@ -83,6 +127,19 @@ void clearBuffer(char *buffer, int size)
     {
         buffer[reset_index] = NULL_CHAR;
     }
+}
+
+static int runCommand(char *buffer)
+{
+    if (buffer == NULL)
+    {
+        return -1;
+    }
+    return 0;
+    // analyis buffer
+    // fork
+    // wait for child process to finish
+    // return exit code of child process
 }
 
 #define ESC_CHAR 27
@@ -110,11 +167,41 @@ void seaShellInteractive()
             {
                 break;
             }
+            // handle arrow keys
+            else if (c == ESC_CHAR)
+            {
+                char arrow_keys_buffer[2] = {NULL_CHAR, NULL_CHAR};
+                arrow_keys_buffer[0] = getchar();
+                arrow_keys_buffer[1] = getchar();
+                // TODO
+                if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
+                {
+                    if (arrow_keys_buffer[1] == 'A')
+                    {
+                        // printf("Up arrow\n");
+                    }
+                    else if (arrow_keys_buffer[1] == 'B')
+                    {
+                        // printf("Down arrow\n");
+                    }
+                    else if (arrow_keys_buffer[1] == 'C')
+                    {
+                        // printf("Right arrow\n");
+                    }
+                    else if (arrow_keys_buffer[1] == 'D')
+                    {
+                        // printf("Left arrow\n");
+                    }
+                    else
+                    {
+                        // pass;
+                    }
+                }
+            }
             else if (c == BACKSPACE_CHAR)
             {
                 i--;
                 // printf("i = %d\n", i);
-                // this first if should never happen
                 // TODO add assert here
                 if (i < 0)
                 {
@@ -137,49 +224,18 @@ void seaShellInteractive()
             }
         }
         buffer[i] = NULL_CHAR;
-        printf("\nBuffer = %s\n", buffer);
         printf("\n\r");
+        seashellFunction *built_in = functionStringToFunction(buffer);
+        if (built_in != NULL)
+        {
+            built_in();
+        }
+        else
+        {
+            printf("\nBuffer = %s\n", buffer);
+            runCommand(buffer);
+        }
         clearBuffer(buffer, LINE_BUFFER_SIZE);
-
-        // if (c == 'q')
-        // {
-        //     break;
-        // }
-        // else if (c == ESC_CHAR)
-        // {
-        //     if (getchar() == '[')
-        //     {
-        //         switch (getchar())
-        //         {
-        //         case 'A':
-        //             Log(INFO, "Up arrow");
-        //             break;
-        //         case 'B':
-        //             Log(INFO, "Down arrow");
-        //             break;
-        //         case 'C':
-        //             Log(INFO, "Right arrow");
-        //             break;
-        //         case 'D':
-        //             Log(INFO, "Left arrow");
-        //             break;
-        //         }
-        //     }
-        // }
-        // // else
-        // // {
-        // //     printf("\n\r");
-        // // }
-        // else if (c == '\n')
-        // {
-        //     printf("\n\r");
-        //     // run command
-        // }
-        // else
-        // {
-        //     printf("%c", c);
-        //     printf("\n\r");
-        // }
     }
     restoreTerminal();
 }
@@ -189,10 +245,15 @@ void seaShellNoInteractive()
     Log(INFO, "Running Non Interactive");
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     InitLogger(TRACE, STANDARD_FMT, false, true, true, true);
     Log(TRACE, "歡迎光臨");
+
+    for (int i = 0; i < argc; i++)
+    {
+        Log(INFO, "argv[%d]: %s", i, argv[i]);
+    }
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
