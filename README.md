@@ -1,7 +1,8 @@
 # seashell
 
-## Name
+## Building and Running
 
-Play on the source code language name "C".
-
-
+```sh
+$ task
+$ ./seashell
+```
