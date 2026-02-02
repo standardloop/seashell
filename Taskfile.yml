@@ -12,6 +12,8 @@ vars:
     - cmds/cmds.c
     - cmds/exit.c
     - cmds/help.c
+    - cmds/pwd.c
+    - cmds/cd.c
 
 # Inputs
 # - REPO_NAME

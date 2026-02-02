@@ -15,4 +15,8 @@ extern int SeashellHelp(StringArr *args);
 
 extern int SeashellExit(StringArr *args);
 
+extern int SeashellPWD(StringArr *args);
+
+extern int SeashellCD(StringArr *args);
+
 #endif
