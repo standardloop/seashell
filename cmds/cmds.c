@@ -11,7 +11,7 @@ extern SeashellFunction *FunctionStringToFunction(char *function_name)
         "ls",
     };
     const size_t seashell_functions_list_length = sizeof(seashell_functions_list) / sizeof(seashell_functions_list[0]);
-    for (int i = 0; i < seashell_functions_list_length; i++)
+    for (size_t i = 0; i < seashell_functions_list_length; i++)
     {
         if (strcmp(seashell_functions_list[i], function_name) == 0)
         {

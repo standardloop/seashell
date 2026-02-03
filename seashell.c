@@ -9,6 +9,7 @@
 
 #include "./seashell.h"
 #include "./cmds/cmds.h"
+#include "./runner/runner.h"
 
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
@@ -103,19 +104,6 @@ static void clearBuffer(char *buffer, int size)
     {
         buffer[reset_index] = NULL_CHAR;
     }
-}
-
-static int runCommand(char *buffer)
-{
-    if (buffer == NULL)
-    {
-        return -1;
-    }
-    return 0;
-    // analyis buffer
-    // fork
-    // wait for child process to finish
-    // return exit code of child process
 }
 
 #define ESC_CHAR 27
@@ -220,8 +208,8 @@ int seaShellInteractive()
         }
         else
         {
-            printf("\nBuffer = %s\n", command_buffer);
-            runCommand(command_buffer);
+            // printf("\nBuffer = %s\n", command_buffer);
+            last_status = RunCommand(buffer_seperated_by_spaces);
         }
         clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
         FreeStringArr(buffer_seperated_by_spaces);

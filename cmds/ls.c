@@ -20,7 +20,7 @@ extern int SeashellLS(StringArr *args)
     }
     DIR *mydir;
     struct dirent *myfile;
-    struct stat mystat;
+    // struct stat mystat;
 
     char buf[512];
     mydir = opendir("."); // TODO support arguments
