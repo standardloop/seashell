@@ -7,9 +7,6 @@ extern int SeashellPWD(StringArr *args)
     {
         return -1;
     }
-    char cwd[1024];
-    // TODO NULL check
-    (void)getcwd(cwd, sizeof(cwd));
-    printf("%s\n", cwd);
+    printf("%s\n", GLOBAL_pwd);
     return 0;
 }

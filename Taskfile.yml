@@ -8,12 +8,14 @@ vars:
   DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
+    - global.c
     - seashell.c
     - cmds/cmds.c
     - cmds/exit.c
     - cmds/help.c
     - cmds/pwd.c
     - cmds/cd.c
+    - cmds/ls.c
 
 # Inputs
 # - REPO_NAME

@@ -2,17 +2,18 @@
 
 extern SeashellFunction *FunctionStringToFunction(char *function_name)
 {
-    const int seashellFunctionListLength = 5;
-    char *seashellFunctionList[] = {
+    char *seashell_functions_list[] = {
         "exit",
         "cd",
         "env",
         "help",
         "pwd",
+        "ls",
     };
-    for (int i = 0; i < seashellFunctionListLength; i++)
+    const size_t seashell_functions_list_length = sizeof(seashell_functions_list) / sizeof(seashell_functions_list[0]);
+    for (int i = 0; i < seashell_functions_list_length; i++)
     {
-        if (strcmp(seashellFunctionList[i], function_name) == 0)
+        if (strcmp(seashell_functions_list[i], function_name) == 0)
         {
             switch (i)
             {
@@ -26,6 +27,8 @@ extern SeashellFunction *FunctionStringToFunction(char *function_name)
                 return SeashellHelp;
             case 4:
                 return SeashellPWD;
+            case 5:
+                return SeashellLS;
             }
         }
     }

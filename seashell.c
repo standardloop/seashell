@@ -15,8 +15,6 @@
 
 #define CHILD_PID 0
 
-volatile sig_atomic_t GLOBAL_seashell_running = true;
-
 void seaShellSigHandler(int);
 int seaShellInteractive();
 void seaShellNoInteractive();
@@ -130,6 +128,13 @@ int seaShellInteractive()
     Log(INFO, "Running Interactive");
     initTerminal();
     int last_status = 0;
+
+    // populate global pwd variable
+    if (getcwd(GLOBAL_pwd, sizeof(GLOBAL_pwd)) == NULL)
+    {
+        printf("couldn't get initial cwd\n");
+        return 1;
+    }
 
     while (GLOBAL_seashell_running)
     {
