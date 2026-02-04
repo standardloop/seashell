@@ -224,7 +224,12 @@ int main(int argc, char **argv)
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SeaShellSigHandler;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
 
     if (sigaction(SIGINT, &sa, NULL) == -1)
     {
