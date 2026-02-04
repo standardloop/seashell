@@ -16,13 +16,11 @@
 
 #define CHILD_PID 0
 
-void seaShellSigHandler(int);
 int seaShellInteractive();
 void seaShellNoInteractive();
 static inline void displayPrompt(int);
 
 static struct termios oldtio, newtio;
-int GLOBAL_last_status = 0;
 
 // TODO
 // struct is more clean to group
@@ -40,32 +38,16 @@ void initTerminal()
     tcsetattr(STDIN_FILENO, TCSANOW, &newtio); // Apply new settings immediately
 }
 
-/* Restore terminal to original settings */
 void restoreTerminal();
 void restoreTerminal()
 {
     tcsetattr(STDIN_FILENO, TCSANOW, &oldtio);
 }
 
-// NOTE: SIGKILL cannot be trapped
-void seaShellSigHandler(int signum)
+static inline bool isInteractive();
+static inline bool isInteractive()
 {
-    switch (signum)
-    {
-    case SIGINT:
-        // SIGCHLD
-        Log(WARN, "SIGINT received!");
-        GLOBAL_last_status = 1;
-        // this only cancel the process that seashell is running
-        break;
-    case SIGTERM:
-        Log(ERROR, "SIGTERM received!");
-        GLOBAL_seashell_running = false;
-        restoreTerminal();
-        break;
-    default:
-        break;
-    }
+    return isatty(STDIN_FILENO) == 1;
 }
 
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -220,9 +202,10 @@ int seaShellInteractive()
         command_buffer[i] = NULL_CHAR;
         if (GLOBAL_seashell_running)
         {
+            printf("\n");
             if (command_buffer[0] != NULL_CHAR)
             {
-                printf("\n\r");
+                printf("\r");
                 StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
                 // PrintStringArr(buffer_seperated_by_spaces);
                 SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
@@ -265,7 +248,7 @@ int main(int argc, char **argv)
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = seaShellSigHandler;
+    sa.sa_handler = SeaShellSigHandler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
@@ -280,7 +263,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (isatty(STDIN_FILENO) == 1)
+    if (isInteractive())
     {
         seaShellInteractive();
         return GLOBAL_last_status;

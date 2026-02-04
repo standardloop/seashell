@@ -6,5 +6,5 @@
 #include <limits.h>
 
 volatile sig_atomic_t GLOBAL_seashell_running = true;
-
+int GLOBAL_last_status = 0;
 char GLOBAL_pwd[PATH_MAX];
