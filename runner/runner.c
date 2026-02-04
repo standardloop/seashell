@@ -42,7 +42,6 @@ extern int RunCommand(char **args)
         {
             printf("Child terminated abnormally for another reason\n");
         }
-        // printf("%s\n", strerror(errno));
         return status;
     }
 }

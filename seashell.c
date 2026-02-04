@@ -228,9 +228,10 @@ int seaShellInteractive()
         }
         else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
         {
-            // printf("\nBuffer = %s\n", command_buffer);
             // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
             char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
+            
+            // TODO: need to check if a command exists before trying to run it.
             last_status = RunCommand(exec_args);
             free(exec_args);
         }
