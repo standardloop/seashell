@@ -22,6 +22,7 @@ void seaShellNoInteractive();
 static inline void displayPrompt(int);
 
 static struct termios oldtio, newtio;
+int GLOBAL_last_status = 0;
 
 // TODO
 // struct is more clean to group
@@ -53,16 +54,17 @@ void seaShellSigHandler(int signum)
     {
     case SIGINT:
         Log(ERROR, "SIGINT received!");
+        GLOBAL_last_status = 1;
         // this only cancel the process that seashell is running
         break;
     case SIGTERM:
         Log(ERROR, "SIGTERM received!");
+        GLOBAL_seashell_running = false;
+        restoreTerminal();
         break;
     default:
         break;
     }
-    restoreTerminal();
-    GLOBAL_seashell_running = false;
 }
 
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -135,7 +137,6 @@ int seaShellInteractive()
     int i;
     Log(INFO, "Running Interactive");
     initTerminal();
-    int last_status = 0;
 
     // populate global pwd variable
     if (getcwd(GLOBAL_pwd, sizeof(GLOBAL_pwd)) == NULL)
@@ -146,7 +147,7 @@ int seaShellInteractive()
 
     while (GLOBAL_seashell_running)
     {
-        displayPrompt(last_status);
+        displayPrompt(GLOBAL_last_status);
         fflush(stdout);
         char command_buffer[COMMAND_BUFFER_SIZE];
         command_buffer[0] = NULL_CHAR;
@@ -216,30 +217,34 @@ int seaShellInteractive()
             }
         }
         command_buffer[i] = NULL_CHAR;
-        printf("\n\r");
-        // need to parse though
-        // to get args for the built in functions
-        StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
-        PrintStringArr(buffer_seperated_by_spaces);
-        SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
-        if (built_in != NULL)
+        if (GLOBAL_seashell_running)
         {
-            last_status = built_in(buffer_seperated_by_spaces);
+            if (command_buffer[0] != NULL_CHAR)
+            {
+                printf("\n\r");
+                StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
+                // PrintStringArr(buffer_seperated_by_spaces);
+                SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
+                if (built_in != NULL)
+                {
+                    GLOBAL_last_status = built_in(buffer_seperated_by_spaces);
+                }
+                else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
+                {
+                    // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
+                    char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
+
+                    // TODO: need to check if a command exists before trying to run it.
+                    GLOBAL_last_status = RunCommand(exec_args);
+                    free(exec_args);
+                }
+                clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+                FreeStringArr(buffer_seperated_by_spaces);
+            }
         }
-        else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
-        {
-            // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
-            char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
-            
-            // TODO: need to check if a command exists before trying to run it.
-            last_status = RunCommand(exec_args);
-            free(exec_args);
-        }
-        clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-        FreeStringArr(buffer_seperated_by_spaces);
     }
     restoreTerminal();
-    return last_status;
+    return GLOBAL_last_status;
 }
 
 void seaShellNoInteractive()
@@ -276,7 +281,8 @@ int main(int argc, char **argv)
 
     if (isatty(STDIN_FILENO) == 1)
     {
-        return seaShellInteractive();
+        seaShellInteractive();
+        return GLOBAL_last_status;
     }
     else
     {
