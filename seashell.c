@@ -53,7 +53,8 @@ void seaShellSigHandler(int signum)
     switch (signum)
     {
     case SIGINT:
-        Log(ERROR, "SIGINT received!");
+        // SIGCHLD
+        Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
         // this only cancel the process that seashell is running
         break;

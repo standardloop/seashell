@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <standardloop/logger.h>
+
 #define CHILD_PID 0
 
 extern int RunCommand(char **args)
@@ -23,7 +25,7 @@ extern int RunCommand(char **args)
     else if (pid == CHILD_PID)
     {
         execvp(args[0], args);
-        printf("%s\n", strerror(errno));
+        Log(ERROR, "%s\n", strerror(errno));
         exit(errno);
     }
     else
@@ -32,15 +34,15 @@ extern int RunCommand(char **args)
 
         if (WIFEXITED(status))
         {
-            printf("Child exited normally with status = %d\n", WEXITSTATUS(status));
+            Log(DEBUG, "Child exited normally with status = %d\n", WEXITSTATUS(status));
         }
         else if (WIFSIGNALED(status))
         {
-            printf("Child terminated by signal %d\n", WTERMSIG(status));
+            Log(ERROR, "Child terminated by signal %d\n", WTERMSIG(status));
         }
         else
         {
-            printf("Child terminated abnormally for another reason\n");
+            Log(ERROR, "Child terminated abnormally for another reason\n");
         }
         return status;
     }
