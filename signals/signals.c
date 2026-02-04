@@ -5,12 +5,13 @@
 #include <stdbool.h>
 
 #include <standardloop/logger.h>
-#include "./seashell.h"
+
+#include "./signals.h"
 
 // NOTE: SIGKILL cannot be trapped
 extern void SeaShellSigHandler(int signum)
 {
-    bool is_child = false;
+    // bool is_child = false;
     switch (signum)
     {
     case SIGALRM:
@@ -28,19 +29,12 @@ extern void SeaShellSigHandler(int signum)
     case SIGINT:
         // we only want to exit for the child
         // for the seashell, SIGINT won't exit the program
-        if (is_child)
-        {
-            exit(1);
-        }
-        else
-        {
-            Log(WARN, "SIGINT received!");
-            GLOBAL_last_status = 1;
-        }
-
+        Log(WARN, "SIGINT received!");
+        GLOBAL_last_status = 1;
         break;
     case SIGTERM:
         Log(ERROR, "SIGTERM received!");
+        GLOBAL_last_status = 1;
         GLOBAL_seashell_running = false;
         break;
     default:

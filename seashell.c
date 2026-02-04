@@ -3,13 +3,10 @@
 #include <unistd.h>
 #include <signal.h> // signal polling for graceful shutdown
 
-#include <dirent.h> // directory
-
-#include <termios.h> // handle terminal behavior
-
 #include "./seashell.h"
 #include "./cmds/cmds.h"
 #include "./runner/runner.h"
+#include "./terminal/terminal.h"
 
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
@@ -18,31 +15,8 @@
 
 int seaShellInteractive();
 void seaShellNoInteractive();
+
 static inline void displayPrompt(int);
-
-static struct termios oldtio, newtio;
-
-// TODO
-// struct is more clean to group
-typedef int(seashellFunction)(StringArr *);
-
-/* Initialize terminal to non-canonical and no-echo mode */
-void initTerminal();
-void initTerminal()
-{
-    tcgetattr(STDIN_FILENO, &oldtio);          // Save current terminal settings
-    newtio = oldtio;                           // Make a copy
-    newtio.c_lflag &= ~(ICANON | ECHO);        // Disable canonical mode and echo
-    newtio.c_cc[VMIN] = 1;                     // Read at least 1 character
-    newtio.c_cc[VTIME] = 0;                    // No timeout (wait indefinitely)
-    tcsetattr(STDIN_FILENO, TCSANOW, &newtio); // Apply new settings immediately
-}
-
-void restoreTerminal();
-void restoreTerminal()
-{
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldtio);
-}
 
 static inline bool isInteractive();
 static inline bool isInteractive()
@@ -119,7 +93,7 @@ int seaShellInteractive()
     char c;
     int i;
     Log(INFO, "Running Interactive");
-    initTerminal();
+    InitTerminal();
 
     // populate global pwd variable
     if (getcwd(GLOBAL_pwd, sizeof(GLOBAL_pwd)) == NULL)
@@ -227,7 +201,7 @@ int seaShellInteractive()
             }
         }
     }
-    restoreTerminal();
+    RestoreTerminal();
     return GLOBAL_last_status;
 }
 

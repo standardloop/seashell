@@ -24,6 +24,7 @@ extern int RunCommand(char **args)
     }
     else if (pid == CHILD_PID)
     {
+        signal(SIGINT, SIG_IGN);
         execvp(args[0], args);
         Log(ERROR, "%s\n", strerror(errno));
         exit(errno);

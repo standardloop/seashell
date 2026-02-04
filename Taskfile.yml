@@ -10,7 +10,8 @@ vars:
   SOURCE_FILES:
     - global.c
     - seashell.c
-    - signals.c
+    - signals/signals.c
+    - terminal/terminal.c
     - cmds/cmds.c
     - cmds/exit.c
     - cmds/help.c
