@@ -106,6 +106,26 @@ static void clearBuffer(char *buffer, int size)
     }
 }
 
+static char **stringArrToExecArgs(StringArr *arr)
+{
+    if (arr == NULL || arr->num_strings == 0 || arr->strings == NULL)
+    {
+        return NULL;
+    }
+    char **return_value = malloc(sizeof(char *) * arr->num_strings + 1);
+    if (return_value == NULL)
+    {
+        return NULL;
+    }
+    int i;
+    for (i = 0; i < arr->num_strings; i++)
+    {
+        return_value[i] = arr->strings[i];
+    }
+    return_value[i] = NULL;
+    return return_value;
+}
+
 #define ESC_CHAR 27
 #define COMMAND_BUFFER_SIZE 100
 #define BACKSPACE_CHAR 127
@@ -206,10 +226,13 @@ int seaShellInteractive()
         {
             last_status = built_in(buffer_seperated_by_spaces);
         }
-        else
+        else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
         {
             // printf("\nBuffer = %s\n", command_buffer);
-            last_status = RunCommand(buffer_seperated_by_spaces);
+            // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
+            char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
+            last_status = RunCommand(exec_args);
+            free(exec_args);
         }
         clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
         FreeStringArr(buffer_seperated_by_spaces);

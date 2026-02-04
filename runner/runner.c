@@ -6,7 +6,7 @@
 
 #define CHILD_PID 0
 
-extern int RunCommand(StringArr *args)
+extern int RunCommand(char **args)
 {
     if (args == NULL)
     {
@@ -22,13 +22,9 @@ extern int RunCommand(StringArr *args)
     }
     else if (pid == CHILD_PID)
     {
-        char *exec_args[] = {"gcc", NULL};
-        if (execvp(exec_args[0], exec_args) == -1)
-        {
-            printf("exec failed\n");
-        }
-
-        return -1; // FIXME
+        execvp(args[0], args);
+        printf("%s\n", strerror(errno));
+        exit(errno);
     }
     else
     {

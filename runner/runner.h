@@ -3,6 +3,6 @@
 
 #include <standardloop/util.h>
 
-extern int RunCommand(StringArr *args);
+extern int RunCommand(char **args);
 
 #endif
