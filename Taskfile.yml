@@ -134,6 +134,7 @@ tasks:
     cmds:
       - |
         {{.CC}} {{.CC_FLAGS}} \
+        -fsanitize=address \
         -fno-omit-frame-pointer \
         lab.c \
         -o lab

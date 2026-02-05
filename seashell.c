@@ -54,7 +54,7 @@ static inline void displayPrompt(int last_status)
 static void clearBuffer(char *, int);
 static void clearBuffer(char *buffer, int size)
 {
-    if (buffer == NULL || size < 0)
+    if (buffer == NULL || size <= 0)
     {
         return;
     }
@@ -63,6 +63,22 @@ static void clearBuffer(char *buffer, int size)
     {
         buffer[reset_index] = NULL_CHAR;
     }
+}
+
+static void insertAndShiftBuffer(char *, int, int, char);
+static void insertAndShiftBuffer(char *buffer, int size, int index, char c)
+{
+    if (buffer == NULL || size <= 0 || index < 0 || index >= size)
+    {
+        return;
+    }
+    for (int i = size - 1; i > index; i--)
+    {
+        // printf("buffer: %s\n", buffer);
+        buffer[i] = buffer[i - 1];
+    }
+    buffer[index] = c;
+    buffer[size - 1] = '\0';
 }
 
 static char **stringArrToExecArgs(StringArr *arr)
@@ -106,8 +122,9 @@ int seaShellInteractive()
     {
         displayPrompt(GLOBAL_last_status);
         fflush(stdout);
-        char command_buffer[COMMAND_BUFFER_SIZE];
-        command_buffer[0] = NULL_CHAR;
+        char command_buffer[COMMAND_BUFFER_SIZE] = {0};
+        clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+        
         i = 0;
         while (ALWAYS)
         {
@@ -123,24 +140,36 @@ int seaShellInteractive()
                 char arrow_keys_buffer[2] = {NULL_CHAR, NULL_CHAR};
                 arrow_keys_buffer[0] = getchar();
                 arrow_keys_buffer[1] = getchar();
-                // TODO
+
                 if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
                 {
+                    // Up Arrow
                     if (arrow_keys_buffer[1] == 'A')
                     {
-                        // printf("Up arrow\n");
                     }
+                    // Down Arrow
                     else if (arrow_keys_buffer[1] == 'B')
                     {
-                        // printf("Down arrow\n");
                     }
+                    // Right arrow
                     else if (arrow_keys_buffer[1] == 'C')
                     {
-                        // printf("Right arrow\n");
+
+                        if (command_buffer[i] != NULL_CHAR)
+                        {
+                            i++;
+                            printf("\033[C");
+                        }
                     }
+                    // Left arrow
                     else if (arrow_keys_buffer[1] == 'D')
                     {
-                        // printf("Left arrow\n");
+
+                        if (i > 0)
+                        {
+                            i--;
+                            printf("\b");
+                        }
                     }
                     else
                     {
@@ -168,7 +197,16 @@ int seaShellInteractive()
             }
             else
             {
-                command_buffer[i] = (char)c;
+                if (command_buffer[i] != NULL_CHAR)
+                {
+                    insertAndShiftBuffer(command_buffer, COMMAND_BUFFER_SIZE, i, c);
+                    // printf("has chart already\n");
+                }
+                else
+                {
+                    command_buffer[i] = c;
+                }
+
                 printf("%c", c);
                 i++;
             }
