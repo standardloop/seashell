@@ -8,6 +8,7 @@
 
 #include "./signals.h"
 
+
 // NOTE: SIGKILL cannot be trapped
 extern void SeaShellSigHandler(int signum)
 {
@@ -27,8 +28,7 @@ extern void SeaShellSigHandler(int signum)
         Log(WARN, "SIGCHLD received!");
         break;
     case SIGINT:
-        // we only want to exit for the child
-        // for the seashell, SIGINT won't exit the program
+        // SIGINT should clear the command buffer and then make the status none 0
         Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
         break;

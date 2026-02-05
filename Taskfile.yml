@@ -19,6 +19,7 @@ vars:
     - cmds/cd.c
     - cmds/ls.c
     - runner/runner.c
+    - prompt/prompt.c
 
 # Inputs
 # - REPO_NAME

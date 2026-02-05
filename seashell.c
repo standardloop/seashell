@@ -7,6 +7,7 @@
 #include "./cmds/cmds.h"
 #include "./runner/runner.h"
 #include "./terminal/terminal.h"
+#include "./prompt/prompt.h"
 
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
@@ -16,39 +17,10 @@
 int seaShellInteractive();
 void seaShellNoInteractive();
 
-static inline void displayPrompt(int);
-
 static inline bool isInteractive();
 static inline bool isInteractive()
 {
     return isatty(STDIN_FILENO) == 1;
-}
-
-#define ANSI_COLOR_RED "\x1b[31m"
-#define ANSI_COLOR_GREEN "\x1b[32m"
-#define ANSI_COLOR_YELLOW "\x1b[33m"
-#define ANSI_COLOR_RESET "\x1b[0m"
-
-#define ANSI_STYLE_BOLD "\e[1m"
-#define ANSI_STYLE_ITALICS "\e[3m"
-
-static inline void displayPrompt(int last_status)
-{
-    // TODO
-    // read settings from config file
-    // example, color, showing directory, etc...
-    char cwd[1024];
-    // TODO NULL check
-    (void)getcwd(cwd, sizeof(cwd));
-
-    if (last_status == 0)
-    {
-        printf(ANSI_COLOR_GREEN "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
-    }
-    else
-    {
-        printf(ANSI_COLOR_RED "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
-    }
 }
 
 static void clearBuffer(char *, int);
@@ -120,11 +92,11 @@ int seaShellInteractive()
 
     while (GLOBAL_seashell_running)
     {
-        displayPrompt(GLOBAL_last_status);
+        DisplayPrompt(GLOBAL_last_status);
         fflush(stdout);
         char command_buffer[COMMAND_BUFFER_SIZE] = {0};
         clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-        
+
         i = 0;
         while (ALWAYS)
         {
@@ -200,13 +172,11 @@ int seaShellInteractive()
                 if (command_buffer[i] != NULL_CHAR)
                 {
                     insertAndShiftBuffer(command_buffer, COMMAND_BUFFER_SIZE, i, c);
-                    // printf("has chart already\n");
                 }
                 else
                 {
                     command_buffer[i] = c;
                 }
-
                 printf("%c", c);
                 i++;
             }
@@ -263,12 +233,12 @@ int main(int argc, char **argv)
     sa.sa_handler = SeaShellSigHandler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
     {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
+        Log(FATAL, "sigaction SIGCHLD fail");
+        return EXIT_FAILURE;
     }
-
     if (sigaction(SIGINT, &sa, NULL) == -1)
     {
         Log(FATAL, "sigaction SIGINT fail");
