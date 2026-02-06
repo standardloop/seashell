@@ -7,4 +7,5 @@
 
 volatile sig_atomic_t GLOBAL_seashell_running = true;
 volatile sig_atomic_t GLOBAL_last_status = 0;
+volatile sig_atomic_t GLOBAL_signal_clear_buffer = 0;
 char GLOBAL_pwd[PATH_MAX];

@@ -59,6 +59,7 @@ static void seaShellSigHandler(int signum)
         // SIGINT should clear the command buffer and then make the status none 0
         Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
+        GLOBAL_signal_clear_buffer = true;
         DisplayPrompt(GLOBAL_last_status);
         break;
     case SIGTERM:
