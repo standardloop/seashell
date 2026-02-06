@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h> // signal polling for graceful shutdown
 
 #include "./seashell.h"
 #include "./cmds/cmds.h"
-#include "./runner/runner.h"
-#include "./terminal/terminal.h"
 #include "./prompt/prompt.h"
+#include "./runner/runner.h"
+#include "./signals/signals.h"
+#include "./terminal/terminal.h"
 
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
@@ -189,7 +189,7 @@ int seaShellInteractive()
             {
                 printf("\r");
                 StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
-                // PrintStringArr(buffer_seperated_by_spaces);
+                PrintStringArr(buffer_seperated_by_spaces);
                 SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
                 if (built_in != NULL)
                 {
@@ -228,25 +228,8 @@ int main(int argc, char **argv)
         Log(INFO, "argv[%d]: %s", i, argv[i]);
     }
 
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SeaShellSigHandler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-
-    if (sigaction(SIGCHLD, &sa, NULL) == -1)
+    if (SignalsInit() != 0)
     {
-        Log(FATAL, "sigaction SIGCHLD fail");
-        return EXIT_FAILURE;
-    }
-    if (sigaction(SIGINT, &sa, NULL) == -1)
-    {
-        Log(FATAL, "sigaction SIGINT fail");
-        return EXIT_FAILURE;
-    }
-    if (sigaction(SIGTERM, &sa, NULL) == -1)
-    {
-        Log(FATAL, "sigaction SIGTERM fail");
         return EXIT_FAILURE;
     }
 

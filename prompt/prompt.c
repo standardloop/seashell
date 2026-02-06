@@ -4,6 +4,7 @@
 
 #include "./prompt.h"
 
+// should we just reference global last status?
 extern void DisplayPrompt(int last_status)
 {
     // TODO
@@ -21,4 +22,6 @@ extern void DisplayPrompt(int last_status)
     {
         printf(ANSI_COLOR_RED "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
     }
+    fflush(stdout);
+    fflush(stdin);
 }

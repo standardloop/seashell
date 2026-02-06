@@ -7,10 +7,38 @@
 #include <standardloop/logger.h>
 
 #include "./signals.h"
+#include "../prompt/prompt.h"
 
+static void seaShellSigHandler(int);
+
+extern int SignalsInit()
+{
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = seaShellSigHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+
+    if (sigaction(SIGCHLD, &sa, NULL) == -1)
+    {
+        Log(ERROR, "sigaction SIGCHLD fail");
+        return 1;
+    }
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+    {
+        Log(ERROR, "sigaction SIGINT fail");
+        return 1;
+    }
+    if (sigaction(SIGTERM, &sa, NULL) == -1)
+    {
+        Log(ERROR, "sigaction SIGTERM fail");
+        return 1;
+    }
+    return 0;
+}
 
 // NOTE: SIGKILL cannot be trapped
-extern void SeaShellSigHandler(int signum)
+static void seaShellSigHandler(int signum)
 {
     // bool is_child = false;
     switch (signum)
@@ -31,6 +59,7 @@ extern void SeaShellSigHandler(int signum)
         // SIGINT should clear the command buffer and then make the status none 0
         Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
+        DisplayPrompt(GLOBAL_last_status);
         break;
     case SIGTERM:
         Log(ERROR, "SIGTERM received!");
