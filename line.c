@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <poll.h>
 
 #include "./seashell.h"
 #include "./cmds/cmds.h"
@@ -39,113 +40,122 @@ static bool checkEOFOrEOT(char c)
 extern int GetSeashellLine(char *command_buffer)
 {
     int i = 0;
-    char c;
+    char c = NULL_CHAR;
+
+    struct pollfd fds[1];
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+
     while (ALWAYS)
     {
-
-        c = getchar();
-        if (GLOBAL_signal_clear_buffer)
+        int ret = poll(fds, 1, -1);
+        if (ret == -1)
         {
-            GLOBAL_signal_clear_buffer = false;
-            ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-            GLOBAL_last_status = 0;
-            return 1;
-        }
-
-        // n = read(STDIN_FILENO, &c, 1);
-        // if (n)
-        //     ;
-        // write(STDOUT_FILENO, &c, 1);
-
-        if (checkEOFOrEOT(c))
-        {
-            GLOBAL_seashell_running = false;
-            // TODO: % is showing when running
-            break;
-        }
-        // TODO: autocomplete
-        else if (c == TAB_CHAR)
-        {
-            continue;
-        }
-        // NULL_CHAR 怎麼辦？
-        else if (c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
-        {
-            break;
-        }
-        // handle arrow keys
-        else if (c == ESC_CHAR)
-        {
-            char arrow_keys_buffer[2] = {NULL_CHAR, NULL_CHAR};
-            arrow_keys_buffer[0] = getchar();
-            arrow_keys_buffer[1] = getchar();
-
-            if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
+            if (errno == EINTR)
             {
-                // Up Arrow
-                if (arrow_keys_buffer[1] == 'A')
+                // The signal interrupted poll()
+                if (GLOBAL_signal_clear_buffer)
                 {
+                    ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+                    i = 0;
+                    GLOBAL_signal_clear_buffer = false;
+                    printf("\n");
+                    DisplayPrompt(GLOBAL_last_status);
                 }
-                // Down Arrow
-                else if (arrow_keys_buffer[1] == 'B')
-                {
-                }
-                // Right arrow
-                else if (arrow_keys_buffer[1] == 'C')
-                {
+                continue; // Restart the loop
+            }
+        }
 
-                    if (command_buffer[i] != NULL_CHAR)
+        if (fds[0].revents & POLLIN)
+        {
+            if (read(STDIN_FILENO, &c, 1) > 0)
+            {
+                if (checkEOFOrEOT(c))
+                {
+                    GLOBAL_seashell_running = false;
+                    // TODO: % is showing when running
+                    break;
+                }
+                // TODO: autocomplete
+                else if (c == TAB_CHAR)
+                {
+                    continue;
+                }
+                // NULL_CHAR 怎麼辦？
+                else if (c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
+                {
+                    break;
+                }
+                // handle arrow keys
+                else if (c == ESC_CHAR)
+                {
+                    char arrow_keys_buffer[2] = {0};
+                    arrow_keys_buffer[0] = getchar();
+                    arrow_keys_buffer[1] = getchar();
+
+                    if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
                     {
-                        i++;
-                        printf("\033[C");
+                        // Up Arrow
+                        if (arrow_keys_buffer[1] == 'A')
+                        {
+                        }
+                        // Down Arrow
+                        else if (arrow_keys_buffer[1] == 'B')
+                        {
+                        }
+                        // Right arrow
+                        else if (arrow_keys_buffer[1] == 'C')
+                        {
+
+                            if (command_buffer[i] != NULL_CHAR)
+                            {
+                                i++;
+                                printf("\033[C");
+                            }
+                        }
+                        // Left arrow
+                        else if (arrow_keys_buffer[1] == 'D')
+                        {
+
+                            if (i > 0)
+                            {
+                                i--;
+                                printf("\b");
+                            }
+                        }
+                        else
+                        {
+                            // pass;
+                        }
                     }
                 }
-                // Left arrow
-                else if (arrow_keys_buffer[1] == 'D')
+                else if (c == BACKSPACE_CHAR)
                 {
 
-                    if (i > 0)
+                    if (i != 0)
                     {
                         i--;
-                        printf("\b");
+                        command_buffer[i] = NULL_CHAR;
+                        printf("\b \b");
+                        fflush(stdout);
                     }
+                    // Log(TRACE, "backspace char");
                 }
                 else
                 {
-                    // pass;
+                    if (command_buffer[i] != NULL_CHAR)
+                    {
+                        insertAndShiftBuffer(command_buffer, COMMAND_BUFFER_SIZE, i, c);
+                    }
+                    else
+                    {
+                        command_buffer[i] = c;
+                    }
+                    i++;
+                    putchar(c); // Manual echo
+                    fflush(stdout);
                 }
             }
-        }
-        else if (c == BACKSPACE_CHAR)
-        {
-            i--;
-            // printf("i = %d\n", i);
-            // TODO add assert here
-            if (i < 0)
-            {
-                i = 0;
-                ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-            }
-            else
-            {
-                command_buffer[i] = NULL_CHAR;
-                printf("\b \b");
-            }
-
-            // Log(TRACE, "backspace char");
-        }
-        else
-        {
-            if (command_buffer[i] != NULL_CHAR)
-            {
-                insertAndShiftBuffer(command_buffer, COMMAND_BUFFER_SIZE, i, c);
-            }
-            else
-            {
-                command_buffer[i] = c;
-            }
-            printf("%c", c);
-            i++;
         }
     }
     command_buffer[i] = NULL_CHAR;

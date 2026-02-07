@@ -64,9 +64,9 @@ static void seaShellSigHandler(int signum)
         GLOBAL_last_status = 1;
         GLOBAL_signal_clear_buffer = true;
         // FIXME we don't want this here
-        printf("errno == %d\n", errno);
-        printf("\n");
-        DisplayPrompt(GLOBAL_last_status);
+        // printf("errno == %d\n", errno);
+        // printf("\n");
+        // DisplayPrompt(GLOBAL_last_status);
         break;
     case SIGTERM:
         Log(ERROR, "SIGTERM received!");
