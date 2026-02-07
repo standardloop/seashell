@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <signal.h> // signal polling for graceful shutdown
 #include <stdbool.h>
+#include <errno.h>
 
 #include <standardloop/logger.h>
 
@@ -63,6 +64,7 @@ static void seaShellSigHandler(int signum)
         GLOBAL_last_status = 1;
         GLOBAL_signal_clear_buffer = true;
         // FIXME we don't want this here
+        printf("errno == %d\n", errno);
         printf("\n");
         DisplayPrompt(GLOBAL_last_status);
         break;

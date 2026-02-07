@@ -9,6 +9,7 @@ vars:
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
     - global.c
+    - line.c
     - seashell.c
     - signals/signals.c
     - terminal/terminal.c
