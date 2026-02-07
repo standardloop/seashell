@@ -72,6 +72,11 @@ static char **stringArrToExecArgs(StringArr *arr)
     return_value[i] = NULL;
     return return_value;
 }
+static bool checkEOFOrEOT(char);
+static bool checkEOFOrEOT(char c)
+{
+    return (c == EOT_CHAR || c == EOF);
+}
 
 #define ESC_CHAR 27
 #define COMMAND_BUFFER_SIZE 100
@@ -86,7 +91,7 @@ int seaShellInteractive()
     // populate global pwd variable
     if (getcwd(GLOBAL_pwd, sizeof(GLOBAL_pwd)) == NULL)
     {
-        printf("couldn't get initial cwd\n");
+        Log(ERROR, "couldn't populate GLOBAL_pwd");
         return 1;
     }
 
@@ -102,7 +107,19 @@ int seaShellInteractive()
         {
             c = getchar();
 
-            if (c == EOF || c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
+            if (checkEOFOrEOT(c))
+            {
+                GLOBAL_seashell_running = false;
+                // TODO: % is showing when running
+                break;
+            }
+            // TODO: autocomplete
+            else if (c == TAB_CHAR)
+            {
+                continue;
+            }
+            // NULL_CHAR 怎麼辦？
+            else if (c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
             {
                 break;
             }
@@ -181,14 +198,16 @@ int seaShellInteractive()
                 i++;
             }
         }
-        command_buffer[i] = NULL_CHAR;
+
         if (GLOBAL_seashell_running)
         {
+            command_buffer[i] = NULL_CHAR;
             printf("\n");
             if (GLOBAL_signal_clear_buffer)
             {
                 GLOBAL_signal_clear_buffer = false;
                 clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+                GLOBAL_last_status = 0;
             }
             else
             {
@@ -213,6 +232,10 @@ int seaShellInteractive()
                     }
                     clearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
                     FreeStringArr(buffer_seperated_by_spaces);
+                }
+                else
+                {
+                    GLOBAL_last_status = 0;
                 }
             }
         }

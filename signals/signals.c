@@ -38,6 +38,8 @@ extern int SignalsInit()
 }
 
 // NOTE: SIGKILL cannot be trapped
+// printf is not safe in signal handlers
+// FIXME
 static void seaShellSigHandler(int signum)
 {
     // bool is_child = false;
@@ -57,9 +59,11 @@ static void seaShellSigHandler(int signum)
         break;
     case SIGINT:
         // SIGINT should clear the command buffer and then make the status none 0
-        Log(WARN, "SIGINT received!");
+        // Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
         GLOBAL_signal_clear_buffer = true;
+        // FIXME we don't want this here
+        printf("\n");
         DisplayPrompt(GLOBAL_last_status);
         break;
     case SIGTERM:

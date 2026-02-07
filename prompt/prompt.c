@@ -14,6 +14,8 @@ extern void DisplayPrompt(int last_status)
     // TODO NULL check
     (void)getcwd(cwd, sizeof(cwd));
 
+    // this should just print $PS1
+
     if (last_status == 0)
     {
         printf(ANSI_COLOR_GREEN "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
