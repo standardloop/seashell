@@ -37,10 +37,13 @@ static bool checkEOFOrEOT(char c)
     return (c == EOT_CHAR || c == EOF);
 }
 
-extern int GetSeashellLine(char *command_buffer)
+#define MACRO_cursorForward(x) printf("\033[%dC", (x))
+#define MACRO_cursorBackward(x) printf("\033[%dD", (x))
+extern int GetSeashellLine(char *cmd_buffer)
 {
-    int i = 0;
+    int cmd_index = 0;
     char c = NULL_CHAR;
+    int cmd_buffer_curr_length = 0;
 
     struct pollfd fds[1];
     fds[0].fd = STDIN_FILENO;
@@ -56,11 +59,13 @@ extern int GetSeashellLine(char *command_buffer)
                 // The signal interrupted poll()
                 if (GLOBAL_signal_clear_buffer)
                 {
-                    ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-                    i = 0;
+                    ClearBuffer(cmd_buffer, COMMAND_BUFFER_SIZE);
+                    cmd_index = 0;
+                    cmd_buffer_curr_length = 0;
                     GLOBAL_signal_clear_buffer = false;
                     printf("\n");
                     DisplayPrompt(GLOBAL_last_status);
+                    fflush(stdout);
                 }
                 continue; // Restart the loop
             }
@@ -82,60 +87,60 @@ extern int GetSeashellLine(char *command_buffer)
                     continue;
                 }
                 // NULL_CHAR 怎麼辦？
-                else if (c == NEWLINE_CHAR || c == NULL_CHAR || i == COMMAND_BUFFER_SIZE - 1)
+                else if (c == NEWLINE_CHAR || c == NULL_CHAR || cmd_index == COMMAND_BUFFER_SIZE - 1)
                 {
                     break;
                 }
                 // handle arrow keys
                 else if (c == ESC_CHAR)
                 {
-                    char arrow_keys_buffer[2] = {0};
-                    arrow_keys_buffer[0] = getchar();
-                    arrow_keys_buffer[1] = getchar();
-
-                    if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
+                    char arrow_keys_buffer[3] = {0};
+                    if (read(STDIN_FILENO, &arrow_keys_buffer[0], 1) > 0 && read(STDIN_FILENO, &arrow_keys_buffer[1], 1) > 0)
                     {
-                        // Up Arrow
-                        if (arrow_keys_buffer[1] == 'A')
+                        if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
                         {
-                        }
-                        // Down Arrow
-                        else if (arrow_keys_buffer[1] == 'B')
-                        {
-                        }
-                        // Right arrow
-                        else if (arrow_keys_buffer[1] == 'C')
-                        {
-
-                            if (command_buffer[i] != NULL_CHAR)
+                            // Up Arrow
+                            if (arrow_keys_buffer[1] == 'A')
                             {
-                                i++;
-                                printf("\033[C");
                             }
-                        }
-                        // Left arrow
-                        else if (arrow_keys_buffer[1] == 'D')
-                        {
-
-                            if (i > 0)
+                            // Down Arrow
+                            else if (arrow_keys_buffer[1] == 'B')
                             {
-                                i--;
-                                printf("\b");
                             }
-                        }
-                        else
-                        {
-                            // pass;
+                            // Right arrow
+                            else if (arrow_keys_buffer[1] == 'C')
+                            {
+                                // Log(TRACE, "Right");
+                                if (cmd_buffer[cmd_index] != NULL_CHAR)
+                                {
+                                    cmd_index++;
+                                    MACRO_cursorForward(1);
+                                }
+                            }
+                            // Left arrow
+                            else if (arrow_keys_buffer[1] == 'D')
+                            {
+                                // Log(TRACE, "left");
+                                if (cmd_index > 0)
+                                {
+                                    cmd_index--;
+                                    MACRO_cursorBackward(1);
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
                     }
                 }
                 else if (c == BACKSPACE_CHAR)
                 {
-
-                    if (i != 0)
+                    if (cmd_index > 0)
                     {
-                        i--;
-                        command_buffer[i] = NULL_CHAR;
+                        cmd_index--;
+                        cmd_buffer_curr_length--;
+                        cmd_buffer[cmd_index] = NULL_CHAR;
                         printf("\b \b");
                         fflush(stdout);
                     }
@@ -143,21 +148,23 @@ extern int GetSeashellLine(char *command_buffer)
                 }
                 else
                 {
-                    if (command_buffer[i] != NULL_CHAR)
+                    if (cmd_buffer[cmd_index] != NULL_CHAR)
                     {
-                        insertAndShiftBuffer(command_buffer, COMMAND_BUFFER_SIZE, i, c);
+                        // TODO
+                        insertAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_index, c);
                     }
                     else
                     {
-                        command_buffer[i] = c;
+                        cmd_buffer[cmd_index] = c;
                     }
-                    i++;
-                    putchar(c); // Manual echo
-                    fflush(stdout);
+                    cmd_index++;
+                    putchar(c); // Manual echo since we disabled it
                 }
+                fflush(stdout);
             }
         }
     }
-    command_buffer[i] = NULL_CHAR;
+    (void)cmd_buffer_curr_length;
+    cmd_buffer[cmd_index] = NULL_CHAR;
     return 0;
 }
