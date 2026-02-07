@@ -148,23 +148,31 @@ extern int GetSeashellLine(char *cmd_buffer)
                 }
                 else
                 {
+                    // left arrow or right arrow was used and we need to insert and shift
                     if (cmd_buffer[cmd_index] != NULL_CHAR)
                     {
-                        // TODO
+                        // Wrap this in a function
                         insertAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_index, c);
+                        printf("\r");
+                        DisplayPrompt(GLOBAL_last_status);
+                        printf("%s", cmd_buffer);
+                        int curr_buff_size_temp = (int)strlen(cmd_buffer);
+                        MACRO_cursorBackward(curr_buff_size_temp);
+                        MACRO_cursorForward(cmd_index + 1);
                     }
+                    // normal operation
                     else
                     {
                         cmd_buffer[cmd_index] = c;
+                        putchar(c); // Manual echo since we disabled it
                     }
                     cmd_index++;
-                    putchar(c); // Manual echo since we disabled it
                 }
                 fflush(stdout);
             }
         }
     }
     (void)cmd_buffer_curr_length;
-    cmd_buffer[cmd_index] = NULL_CHAR;
+    // cmd_buffer[cmd_index] = NULL_CHAR;
     return 0;
 }
