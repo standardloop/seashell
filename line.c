@@ -231,7 +231,5 @@ extern int GetSeashellLine(char *cmd_buffer)
             }
         }
     }
-    (void)cmd_buffer_curr_length;
-    // cmd_buffer[cmd_cursor_index] = NULL_CHAR;
     return 0;
 }
