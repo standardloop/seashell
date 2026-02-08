@@ -14,22 +14,39 @@
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
 
-static void insertAndShiftBuffer(char *, int, int, char);
 static bool checkEOFOrEOT(char);
+static void insertAndShiftBuffer(char *, int, int, char c);
+static void deleteAndShiftBuffer(char *, int, int);
 
-static void insertAndShiftBuffer(char *buffer, int size, int index, char c)
+
+static void insertAndShiftBuffer(char *buffer, int max_size, int index, char c)
 {
-    if (buffer == NULL || size <= 0 || index < 0 || index >= size)
+    if (buffer == NULL || max_size <= 0 || index < 0 || index >= max_size)
     {
         return;
     }
-    for (int i = size - 1; i > index; i--)
+    for (int i = max_size - 1; i > index; i--)
     {
         // printf("buffer: %s\n", buffer);
         buffer[i] = buffer[i - 1];
     }
     buffer[index] = c;
-    buffer[size - 1] = '\0';
+    buffer[max_size - 1] = '\0'; // just for safety
+}
+
+static void deleteAndShiftBuffer(char *buffer, int max_size, int index)
+{
+    if (buffer == NULL || max_size <= 0 || index < 0 || index >= max_size)
+    {
+        return;
+    }
+    buffer[index] = NULL_CHAR;
+    for (int i = index; i > max_size; i++)
+    {
+        // printf("buffer: %s\n", buffer);
+        buffer[i] = buffer[i + 1];
+    }
+    buffer[max_size - 1] = '\0'; // just for safety
 }
 
 static bool checkEOFOrEOT(char c)
@@ -41,37 +58,39 @@ static bool checkEOFOrEOT(char c)
 #define MACRO_cursorBackward(x) printf("\033[%dD", (x))
 extern int GetSeashellLine(char *cmd_buffer)
 {
-    int cmd_index = 0;
+    int cmd_cursor_index = 0;
     char c = NULL_CHAR;
     int cmd_buffer_curr_length = 0;
 
-    struct pollfd fds[1];
-    fds[0].fd = STDIN_FILENO;
-    fds[0].events = POLLIN;
+    struct pollfd stdin_poll_in;
+    stdin_poll_in.fd = STDIN_FILENO; // pull stdin
+    stdin_poll_in.events = POLLIN;   // let us know when there is data
+    int poll_time = -1;              // poll forever (unless interuppted)
 
     while (ALWAYS)
     {
-        int ret = poll(fds, 1, -1);
+        int ret = poll(&stdin_poll_in, 1, poll_time);
         if (ret == -1)
         {
             if (errno == EINTR)
             {
-                // The signal interrupted poll()
+                // The signal interrupted poll(3)
+                // We need to clear the buffer and reset the flag that was set in signals/signals.c
                 if (GLOBAL_signal_clear_buffer)
                 {
                     ClearBuffer(cmd_buffer, COMMAND_BUFFER_SIZE);
-                    cmd_index = 0;
+                    cmd_cursor_index = 0;
                     cmd_buffer_curr_length = 0;
                     GLOBAL_signal_clear_buffer = false;
                     printf("\n");
                     DisplayPrompt(GLOBAL_last_status);
                     fflush(stdout);
                 }
-                continue; // Restart the loop
+                continue;
             }
         }
 
-        if (fds[0].revents & POLLIN)
+        if (stdin_poll_in.revents & POLLIN)
         {
             if (read(STDIN_FILENO, &c, 1) > 0)
             {
@@ -87,14 +106,14 @@ extern int GetSeashellLine(char *cmd_buffer)
                     continue;
                 }
                 // NULL_CHAR 怎麼辦？
-                else if (c == NEWLINE_CHAR || c == NULL_CHAR || cmd_index == COMMAND_BUFFER_SIZE - 1)
+                else if (c == NEWLINE_CHAR || c == NULL_CHAR || cmd_cursor_index == COMMAND_BUFFER_SIZE - 1)
                 {
                     break;
                 }
-                // handle arrow keys
+                // Handle arrow keys
                 else if (c == ESC_CHAR)
                 {
-                    char arrow_keys_buffer[3] = {0};
+                    char arrow_keys_buffer[3] = {0}; // TODO, how large should this be?
                     if (read(STDIN_FILENO, &arrow_keys_buffer[0], 1) > 0 && read(STDIN_FILENO, &arrow_keys_buffer[1], 1) > 0)
                     {
                         if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
@@ -111,9 +130,9 @@ extern int GetSeashellLine(char *cmd_buffer)
                             else if (arrow_keys_buffer[1] == 'C')
                             {
                                 // Log(TRACE, "Right");
-                                if (cmd_buffer[cmd_index] != NULL_CHAR)
+                                if (cmd_buffer[cmd_cursor_index] != NULL_CHAR)
                                 {
-                                    cmd_index++;
+                                    cmd_cursor_index++;
                                     MACRO_cursorForward(1);
                                 }
                             }
@@ -121,9 +140,9 @@ extern int GetSeashellLine(char *cmd_buffer)
                             else if (arrow_keys_buffer[1] == 'D')
                             {
                                 // Log(TRACE, "left");
-                                if (cmd_index > 0)
+                                if (cmd_cursor_index > 0)
                                 {
-                                    cmd_index--;
+                                    cmd_cursor_index--;
                                     MACRO_cursorBackward(1);
                                 }
                             }
@@ -136,43 +155,57 @@ extern int GetSeashellLine(char *cmd_buffer)
                 }
                 else if (c == BACKSPACE_CHAR)
                 {
-                    if (cmd_index > 0)
+                    if (cmd_cursor_index > 0)
                     {
-                        cmd_index--;
+
+                        cmd_cursor_index--;
                         cmd_buffer_curr_length--;
-                        cmd_buffer[cmd_index] = NULL_CHAR;
                         printf("\b \b");
-                        fflush(stdout);
+                        deleteAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_cursor_index);
+                        printf("\r");
+                        DisplayPrompt(GLOBAL_last_status);
+                        printf("%s", cmd_buffer);
+                        // printf("\n%d\n", cmd_buffer_curr_length);
+                        int curr_buff_size_temp = (int)strlen(cmd_buffer); // can we track this without strlen? cmd_buffer_curr_length;
+                        // int curr_buff_size_temp = cmd_buffer_curr_length; // can we track this without strlen?
+                        MACRO_cursorBackward(curr_buff_size_temp);
+                        MACRO_cursorForward(cmd_cursor_index);
                     }
                     // Log(TRACE, "backspace char");
                 }
                 else
                 {
                     // left arrow or right arrow was used and we need to insert and shift
-                    if (cmd_buffer[cmd_index] != NULL_CHAR)
+                    if (cmd_buffer[cmd_cursor_index] != NULL_CHAR)
                     {
                         // Wrap this in a function
-                        insertAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_index, c);
+                        // printf("\n%d\n", cmd_buffer_curr_length);
+                        insertAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_cursor_index, c);
+                        cmd_buffer_curr_length++;
+                        cmd_cursor_index++;
                         printf("\r");
                         DisplayPrompt(GLOBAL_last_status);
                         printf("%s", cmd_buffer);
-                        int curr_buff_size_temp = (int)strlen(cmd_buffer);
+                        // printf("\n%d\n", cmd_buffer_curr_length);
+                        int curr_buff_size_temp = (int)strlen(cmd_buffer); // can we track this without strlen? cmd_buffer_curr_length;
+                        // int curr_buff_size_temp = cmd_buffer_curr_length; // can we track this without strlen?
                         MACRO_cursorBackward(curr_buff_size_temp);
-                        MACRO_cursorForward(cmd_index + 1);
+                        MACRO_cursorForward(cmd_cursor_index);
                     }
-                    // normal operation
+                    // Normal operation
                     else
                     {
-                        cmd_buffer[cmd_index] = c;
-                        putchar(c); // Manual echo since we disabled it
+                        cmd_buffer[cmd_cursor_index] = c;
+                        putchar(c); // Manual echo since we disabled it in terminal/terminal.c
+                        cmd_buffer_curr_length++;
+                        cmd_cursor_index++;
                     }
-                    cmd_index++;
                 }
                 fflush(stdout);
             }
         }
     }
     (void)cmd_buffer_curr_length;
-    // cmd_buffer[cmd_index] = NULL_CHAR;
+    // cmd_buffer[cmd_cursor_index] = NULL_CHAR;
     return 0;
 }
