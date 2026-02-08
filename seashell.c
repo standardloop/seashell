@@ -98,7 +98,7 @@ int seaShellInteractive()
                 printf("\r");
                 if (command_buffer[0] != NULL_CHAR)
                 {
-                    StringArr *buffer_seperated_by_spaces = EveryoneExplodeNow(command_buffer, SPACE_CHAR);
+                    StringArr *buffer_seperated_by_spaces = EveryoneExplodeNowHandleQuotes(command_buffer, SPACE_CHAR, DOUBLE_QUOTES_CHAR); // looks of work needed here
                     PrintStringArr(buffer_seperated_by_spaces);
 
                     // see if command matches built in
