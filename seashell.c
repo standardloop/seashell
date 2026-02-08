@@ -59,11 +59,6 @@ static char **stringArrToExecArgs(StringArr *arr)
 
 int seaShellInteractive()
 {
-    ssize_t n = 0;
-    if (n)
-    {
-        ;
-    }
     Log(INFO, "Running Interactive");
     InitTerminal();
 
@@ -81,48 +76,40 @@ int seaShellInteractive()
         char command_buffer[COMMAND_BUFFER_SIZE] = {0};
 
         int err = GetSeashellLine(command_buffer);
+        // TODO
         if (err != 0)
             ;
 
         if (GLOBAL_seashell_running)
         {
             printf("\n");
-            if (GLOBAL_signal_clear_buffer)
+            printf("\r");
+            if (command_buffer[0] != NULL_CHAR)
             {
-                // GLOBAL_signal_clear_buffer = false;
-                // ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-                // GLOBAL_last_status = 0;
+                StringArr *buffer_seperated_by_spaces = EveryoneExplodeNowHandleQuotes(command_buffer, SPACE_CHAR, DOUBLE_QUOTES_CHAR); // looks of work needed here
+                PrintStringArr(buffer_seperated_by_spaces);
+
+                // see if command matches built in
+                SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
+                if (built_in != NULL)
+                {
+                    GLOBAL_last_status = built_in(buffer_seperated_by_spaces);
+                }
+                else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
+                {
+                    // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
+                    char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
+
+                    // TODO: need to check if a command exists before trying to run it.
+                    GLOBAL_last_status = RunCommand(exec_args);
+                    free(exec_args);
+                }
+                ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
+                FreeStringArr(buffer_seperated_by_spaces);
             }
             else
             {
-                printf("\r");
-                if (command_buffer[0] != NULL_CHAR)
-                {
-                    StringArr *buffer_seperated_by_spaces = EveryoneExplodeNowHandleQuotes(command_buffer, SPACE_CHAR, DOUBLE_QUOTES_CHAR); // looks of work needed here
-                    PrintStringArr(buffer_seperated_by_spaces);
-
-                    // see if command matches built in
-                    SeashellFunction *built_in = FunctionStringToFunction(buffer_seperated_by_spaces->strings[0]);
-                    if (built_in != NULL)
-                    {
-                        GLOBAL_last_status = built_in(buffer_seperated_by_spaces);
-                    }
-                    else if (buffer_seperated_by_spaces->num_strings >= 1 && buffer_seperated_by_spaces->strings[0] != NULL && buffer_seperated_by_spaces->strings[0][0] != NULL_CHAR)
-                    {
-                        // execvp requires char** instead of our custom StringArr for our custom <standardloop/util.h>
-                        char **exec_args = stringArrToExecArgs(buffer_seperated_by_spaces);
-
-                        // TODO: need to check if a command exists before trying to run it.
-                        GLOBAL_last_status = RunCommand(exec_args);
-                        free(exec_args);
-                    }
-                    ClearBuffer(command_buffer, COMMAND_BUFFER_SIZE);
-                    FreeStringArr(buffer_seperated_by_spaces);
-                }
-                else
-                {
-                    GLOBAL_last_status = 0;
-                }
+                GLOBAL_last_status = 0;
             }
         }
     }
