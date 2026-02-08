@@ -80,6 +80,8 @@ tasks:
       - |
         {{.CC}} {{.CC_FLAGS}} \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
+        -fsanitize=address \
+        -fno-omit-frame-pointer \
         {{.DYN_LIBS_USED_PATH}} \
         {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}

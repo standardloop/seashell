@@ -18,35 +18,31 @@ static bool checkEOFOrEOT(char);
 static void insertAndShiftBuffer(char *, int, int, char c);
 static void deleteAndShiftBuffer(char *, int, int);
 
-
-static void insertAndShiftBuffer(char *buffer, int max_size, int index, char c)
+static void insertAndShiftBuffer(char *buffer, int size, int index, char c)
 {
-    if (buffer == NULL || max_size <= 0 || index < 0 || index >= max_size)
+    if (buffer == NULL || size <= 0 || index < 0 || index >= size)
     {
         return;
     }
-    for (int i = max_size - 1; i > index; i--)
+    for (int i = size; i >= index; i--)
     {
-        // printf("buffer: %s\n", buffer);
-        buffer[i] = buffer[i - 1];
+        buffer[i + 1] = buffer[i];
     }
     buffer[index] = c;
-    buffer[max_size - 1] = '\0'; // just for safety
 }
 
-static void deleteAndShiftBuffer(char *buffer, int max_size, int index)
+static void deleteAndShiftBuffer(char *buffer, int size, int index)
 {
-    if (buffer == NULL || max_size <= 0 || index < 0 || index >= max_size)
+    if (buffer == NULL || size <= 0 || index < 0 || index >= size)
     {
         return;
     }
     buffer[index] = NULL_CHAR;
-    for (int i = index; i > max_size; i++)
+    for (int i = index; i < size; i++)
     {
-        // printf("buffer: %s\n", buffer);
         buffer[i] = buffer[i + 1];
     }
-    buffer[max_size - 1] = '\0'; // just for safety
+    buffer[size - 1] = '\0'; // just for safety
 }
 
 static bool checkEOFOrEOT(char c)
@@ -130,7 +126,7 @@ extern int GetSeashellLine(char *cmd_buffer)
                             else if (arrow_keys_buffer[1] == 'C')
                             {
                                 // Log(TRACE, "Right");
-                                if (cmd_buffer[cmd_cursor_index] != NULL_CHAR)
+                                if (cmd_cursor_index < cmd_buffer_curr_length)
                                 {
                                     cmd_cursor_index++;
                                     MACRO_cursorForward(1);
@@ -157,18 +153,14 @@ extern int GetSeashellLine(char *cmd_buffer)
                 {
                     if (cmd_cursor_index > 0)
                     {
-
-                        cmd_cursor_index--;
+                        printf("\n");
+                        deleteAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index - 1);
                         cmd_buffer_curr_length--;
-                        printf("\b \b");
-                        deleteAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_cursor_index);
+                        cmd_cursor_index--;
                         printf("\r");
                         DisplayPrompt(GLOBAL_last_status);
                         printf("%s", cmd_buffer);
-                        // printf("\n%d\n", cmd_buffer_curr_length);
-                        int curr_buff_size_temp = (int)strlen(cmd_buffer); // can we track this without strlen? cmd_buffer_curr_length;
-                        // int curr_buff_size_temp = cmd_buffer_curr_length; // can we track this without strlen?
-                        MACRO_cursorBackward(curr_buff_size_temp);
+                        MACRO_cursorBackward(cmd_buffer_curr_length);
                         MACRO_cursorForward(cmd_cursor_index);
                     }
                     // Log(TRACE, "backspace char");
@@ -186,10 +178,7 @@ extern int GetSeashellLine(char *cmd_buffer)
                         printf("\r");
                         DisplayPrompt(GLOBAL_last_status);
                         printf("%s", cmd_buffer);
-                        // printf("\n%d\n", cmd_buffer_curr_length);
-                        int curr_buff_size_temp = (int)strlen(cmd_buffer); // can we track this without strlen? cmd_buffer_curr_length;
-                        // int curr_buff_size_temp = cmd_buffer_curr_length; // can we track this without strlen?
-                        MACRO_cursorBackward(curr_buff_size_temp);
+                        MACRO_cursorBackward(cmd_buffer_curr_length);
                         MACRO_cursorForward(cmd_cursor_index);
                     }
                     // Normal operation

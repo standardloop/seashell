@@ -26,7 +26,7 @@ extern int SeashellLS(StringArr *args)
     mydir = opendir("."); // TODO support arguments
     while ((myfile = readdir(mydir)) != NULL)
     {
-        sprintf(buf, "%s/%s", ".", myfile->d_name);
+        snprintf(buf, sizeof(buf), "%s/%s", ".", myfile->d_name);
         // stat(buf, &mystat);
         // printf("%zu", mystat.st_size);
         printf(" %s ", myfile->d_name);

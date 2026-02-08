@@ -43,7 +43,7 @@ static char **stringArrToExecArgs(StringArr *arr)
     {
         return NULL;
     }
-    char **return_value = malloc(sizeof(char *) * arr->num_strings + 1);
+    char **return_value = malloc(sizeof(char *) * (arr->num_strings + 1)); // +1 for NULL at end
     if (return_value == NULL)
     {
         return NULL;
