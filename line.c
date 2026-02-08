@@ -50,8 +50,25 @@ static bool checkEOFOrEOT(char c)
     return (c == EOT_CHAR || c == EOF);
 }
 
-#define MACRO_cursorForward(x) printf("\033[%dC", (x))
-#define MACRO_cursorBackward(x) printf("\033[%dD", (x))
+static inline void cursorForward(int);
+static inline void cursorBackward(int);
+
+static inline void cursorBackward(int x)
+{
+    if (x != 0)
+    {
+        printf("\033[%dD", (x));
+    }
+}
+
+static inline void cursorForward(int x)
+{
+    if (x != 0)
+    {
+        printf("\033[%dC", (x));
+    }
+}
+
 extern int GetSeashellLine(char *cmd_buffer)
 {
     int cmd_cursor_index = 0;
@@ -129,7 +146,7 @@ extern int GetSeashellLine(char *cmd_buffer)
                                 if (cmd_cursor_index < cmd_buffer_curr_length)
                                 {
                                     cmd_cursor_index++;
-                                    MACRO_cursorForward(1);
+                                    cursorForward(1);
                                 }
                             }
                             // Left arrow
@@ -139,7 +156,7 @@ extern int GetSeashellLine(char *cmd_buffer)
                                 if (cmd_cursor_index > 0)
                                 {
                                     cmd_cursor_index--;
-                                    MACRO_cursorBackward(1);
+                                    cursorBackward(1);
                                 }
                             }
                             else
@@ -160,8 +177,10 @@ extern int GetSeashellLine(char *cmd_buffer)
                         printf("\r");
                         DisplayPrompt(GLOBAL_last_status);
                         printf("%s", cmd_buffer);
-                        MACRO_cursorBackward(cmd_buffer_curr_length);
-                        MACRO_cursorForward(cmd_cursor_index);
+                        // printf("\n%d\n", cmd_cursor_index);
+
+                        cursorForward(cmd_cursor_index);
+                        cursorBackward(cmd_buffer_curr_length);
                     }
                     // Log(TRACE, "backspace char");
                 }
@@ -172,14 +191,14 @@ extern int GetSeashellLine(char *cmd_buffer)
                     {
                         // Wrap this in a function
                         // printf("\n%d\n", cmd_buffer_curr_length);
-                        insertAndShiftBuffer(cmd_buffer, COMMAND_BUFFER_SIZE, cmd_cursor_index, c);
+                        insertAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index, c);
                         cmd_buffer_curr_length++;
                         cmd_cursor_index++;
                         printf("\r");
                         DisplayPrompt(GLOBAL_last_status);
                         printf("%s", cmd_buffer);
-                        MACRO_cursorBackward(cmd_buffer_curr_length);
-                        MACRO_cursorForward(cmd_cursor_index);
+                        cursorBackward(cmd_buffer_curr_length);
+                        cursorForward(cmd_cursor_index);
                     }
                     // Normal operation
                     else
