@@ -14,9 +14,24 @@
 #include <standardloop/logger.h>
 #include <standardloop/util.h>
 
-static bool checkEOFOrEOT(char);
+static inline bool checkEOFOrEOT(char);
+static inline void cursorForward(int);
+static inline void cursorBackward(int);
+static inline void clearEntireLine();
+static inline void printCMDBuffer(char *);
+static inline void moveBackToBeginningOfLine();
+static void resetEntireLine(char *, int, int);
+
 static void insertAndShiftBuffer(char *, int, int, char c);
 static void deleteAndShiftBuffer(char *, int, int);
+
+static inline void printCMDBuffer(char *buffer)
+{
+    if (buffer != NULL)
+    {
+        printf("%s", buffer);
+    }
+}
 
 static void insertAndShiftBuffer(char *buffer, int size, int index, char c)
 {
@@ -45,13 +60,10 @@ static void deleteAndShiftBuffer(char *buffer, int size, int index)
     buffer[size - 1] = '\0'; // just for safety
 }
 
-static bool checkEOFOrEOT(char c)
+static inline bool checkEOFOrEOT(char c)
 {
     return (c == EOT_CHAR || c == EOF);
 }
-
-static inline void cursorForward(int);
-static inline void cursorBackward(int);
 
 static inline void cursorBackward(int x)
 {
@@ -67,6 +79,26 @@ static inline void cursorForward(int x)
     {
         printf("\033[%dC", (x));
     }
+}
+
+static inline void clearEntireLine()
+{
+    printf("\033[2K");
+}
+
+static inline void moveBackToBeginningOfLine()
+{
+    printf("\r");
+}
+
+static void resetEntireLine(char *cmd_buffer, int cmd_cursor_index, int cmd_buffer_curr_length)
+{
+    clearEntireLine();
+    moveBackToBeginningOfLine();
+    DisplayPrompt(GLOBAL_last_status);
+    printCMDBuffer(cmd_buffer);
+    cursorBackward(cmd_buffer_curr_length);
+    cursorForward(cmd_cursor_index);
 }
 
 extern int GetSeashellLine(char *cmd_buffer)
@@ -170,35 +202,21 @@ extern int GetSeashellLine(char *cmd_buffer)
                 {
                     if (cmd_cursor_index > 0)
                     {
-                        printf("\n");
                         deleteAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index - 1);
                         cmd_buffer_curr_length--;
                         cmd_cursor_index--;
-                        printf("\r");
-                        DisplayPrompt(GLOBAL_last_status);
-                        printf("%s", cmd_buffer);
-                        // printf("\n%d\n", cmd_cursor_index);
-
-                        cursorForward(cmd_cursor_index);
-                        cursorBackward(cmd_buffer_curr_length);
+                        resetEntireLine(cmd_buffer, cmd_cursor_index, cmd_buffer_curr_length);
                     }
-                    // Log(TRACE, "backspace char");
                 }
                 else
                 {
                     // left arrow or right arrow was used and we need to insert and shift
                     if (cmd_buffer[cmd_cursor_index] != NULL_CHAR)
                     {
-                        // Wrap this in a function
-                        // printf("\n%d\n", cmd_buffer_curr_length);
                         insertAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index, c);
                         cmd_buffer_curr_length++;
                         cmd_cursor_index++;
-                        printf("\r");
-                        DisplayPrompt(GLOBAL_last_status);
-                        printf("%s", cmd_buffer);
-                        cursorBackward(cmd_buffer_curr_length);
-                        cursorForward(cmd_cursor_index);
+                        resetEntireLine(cmd_buffer, cmd_cursor_index, cmd_buffer_curr_length);
                     }
                     // Normal operation
                     else
