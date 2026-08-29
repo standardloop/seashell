@@ -22,20 +22,6 @@ vars:
     - runner/runner.c
     - prompt/prompt.c
 
-# Inputs
-# - REPO_NAME
-# - DYLIB_VERSION
-# - DYLIB_NAME
-download-dependency: &download-dependency |
-  mkdir -p dependencies/tmp-{{.DYLIB_NAME}}
-  cd dependencies/tmp-{{.DYLIB_NAME}}
-  curl -O -J -L https://github.com/standardloop/{{.REPO_NAME}}/releases/download/v{{.DYLIB_VERSION}}/libstandardloop-{{.DYLIB_NAME}}.zip
-  unzip libstandardloop-{{.DYLIB_NAME}}.zip
-  sudo mkdir -p /usr/local/lib/standardloop/
-  sudo mkdir -p /usr/local/include/standardloop/
-  sudo mv libstandardloop-{{.DYLIB_NAME}}.dylib /usr/local/lib/standardloop/
-  sudo mv {{.DYLIB_NAME}}.h /usr/local/include/standardloop/ && rm libstandardloop-{{.DYLIB_NAME}}.zip
-
 tasks:
   default:
     silent: true
@@ -49,14 +35,27 @@ tasks:
       - dependencies:logger
       - dependencies:util
 
+  dependencies:helper-task:
+    internal: true
+    cmds:
+      - mkdir -p dependencies/tmp-{{.DYLIB_NAME}}
+      - cd dependencies/tmp-{{.DYLIB_NAME}}
+      - curl -O -J -L https://github.com/standardloop/{{.REPO_NAME}}/releases/download/v{{.DYLIB_VERSION}}/libstandardloop-{{.DYLIB_NAME}}.zip
+      - unzip libstandardloop-{{.DYLIB_NAME}}.zip
+      - sudo mkdir -p /usr/local/lib/standardloop/
+      - sudo mkdir -p /usr/local/include/standardloop/
+      - sudo mv libstandardloop-{{.DYLIB_NAME}}.dylib /usr/local/lib/standardloop/
+      - sudo mv {{.DYLIB_NAME}}.h /usr/local/include/standardloop/ && rm libstandardloop-{{.DYLIB_NAME}}.zip
+
+
   dependencies:logger:
     vars:
       REPO_NAME: c-logger
-      DYLIB_VERSION: 0.0.9
+      DYLIB_VERSION: 0.0.17
       DYLIB_NAME: logger
     cmds:
       - sudo -v
-      - *download-dependency
+      - task: dependencies:helper-task
     status:
       - otool -L /usr/local/lib/standardloop/libstandardloop-{{.DYLIB_NAME}}.dylib | head -n 2 | tail -n 1 | grep "current version {{.DYLIB_VERSION}}"
       - cat /usr/local/include/standardloop/{{.DYLIB_NAME}}.h | grep "STANDARDLOOP_{{.DYLIB_NAME | upper}}_H_VERSION \"{{.DYLIB_VERSION}}\""
@@ -64,11 +63,11 @@ tasks:
   dependencies:util:
     vars:
       REPO_NAME: c-util
-      DYLIB_VERSION: 0.0.6
+      DYLIB_VERSION: 0.0.8
       DYLIB_NAME: util
     cmds:
       - sudo -v
-      - *download-dependency
+      - task: dependencies:helper-task
     status:
       - otool -L /usr/local/lib/standardloop/libstandardloop-{{.DYLIB_NAME}}.dylib | head -n 2 | tail -n 1 | grep "current version {{.DYLIB_VERSION}}"
       - cat /usr/local/include/standardloop/{{.DYLIB_NAME}}.h | grep "STANDARDLOOP_{{.DYLIB_NAME | upper}}_H_VERSION \"{{.DYLIB_VERSION}}\""
@@ -80,8 +79,6 @@ tasks:
       - |
         {{.CC}} {{.CC_FLAGS}} \
         {{range .SOURCE_FILES}} {{.}} {{end}} \
-        -fsanitize=address \
-        -fno-omit-frame-pointer \
         {{.DYN_LIBS_USED_PATH}} \
         {{.DYN_LIBS_USED}} \
         -o {{.EXECUTABLE_NAME}}
@@ -89,7 +86,7 @@ tasks:
       - ./**/*.c
     generates:
       - "{{.EXECUTABLE_NAME}}"
-  
+
   run:
     deps:
       - build
@@ -117,7 +114,7 @@ tasks:
       - ./**/*.c
     generates:
       - "{{.EXECUTABLE_NAME}}-sanitize"
-  
+
   run:sanitize:
     deps:
       - build:sanitize
@@ -125,7 +122,7 @@ tasks:
       - ./{{.EXECUTABLE_NAME}}-sanitize
 
   clean:
-    allow_failures: true
+    ignore_error: true
     cmds:
       - rm -f {{.EXECUTABLE_NAME}}
       - rm -f {{.EXECUTABLE_NAME}}-debug

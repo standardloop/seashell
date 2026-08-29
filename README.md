@@ -14,4 +14,3 @@ $ ./seashell
 ~/.seashellenv
 ~/.seashell_history
 ```
-
