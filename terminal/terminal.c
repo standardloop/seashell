@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h> // signal polling for graceful shutdown
 #include <termios.h>
 #include <dirent.h>
 
