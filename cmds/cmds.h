@@ -1,8 +1,8 @@
 #ifndef STANDARDLOOP_SEASHELL_CMDS_H
 #define STANDARDLOOP_SEASHELL_CMDS_H
 
-#include <standardloop/util.h>
 #include <limits.h>
+#include <standardloop/util.h>
 
 #define SEASHELL_VERSION "v0.0.0"
 

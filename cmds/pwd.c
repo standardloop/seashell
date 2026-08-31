@@ -1,5 +1,5 @@
-#include <unistd.h>
 #include "./cmds.h"
+#include <unistd.h>
 
 extern int SeashellPWD(StringArr *args)
 {

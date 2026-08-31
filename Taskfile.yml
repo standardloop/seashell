@@ -1,11 +1,11 @@
 ---
-version: '3'
+version: "3"
 
 vars:
-  CC: gcc
+  CC: clang
   CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
   EXECUTABLE_NAME: seashell
-  DYN_LIBS_USED_PATH: "-L/usr/local/lib/standardloop"
+  DYN_LIBS_USED_PATH: "-I/usr/local/include -L/usr/local/lib/standardloop"
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
     - global.c
@@ -46,7 +46,6 @@ tasks:
       - sudo mkdir -p /usr/local/include/standardloop/
       - sudo mv libstandardloop-{{.DYLIB_NAME}}.dylib /usr/local/lib/standardloop/
       - sudo mv {{.DYLIB_NAME}}.h /usr/local/include/standardloop/ && rm libstandardloop-{{.DYLIB_NAME}}.zip
-
 
   dependencies:logger:
     vars:
@@ -130,7 +129,6 @@ tasks:
       - rm -f {{.EXECUTABLE_NAME}} optimize
       - rm -f a.out
 
-
   lab:
     cmds:
       - |
@@ -143,3 +141,8 @@ tasks:
       - ./lab.c
     generates:
       - "lab"
+
+  fmt:
+    silent: true
+    cmds:
+      - find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -style=file -i {} +

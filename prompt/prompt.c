@@ -18,11 +18,17 @@ extern void DisplayPrompt(int last_status)
 
     if (last_status == 0)
     {
-        printf(ANSI_COLOR_GREEN "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
+        printf(ANSI_COLOR_GREEN "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN
+                                "seashell 🐚" ANSI_COLOR_YELLOW
+                                ": " ANSI_COLOR_RESET,
+               cwd);
     }
     else
     {
-        printf(ANSI_COLOR_RED "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN "seashell 🐚" ANSI_COLOR_YELLOW ": " ANSI_COLOR_RESET, cwd);
+        printf(ANSI_COLOR_RED "➜ " ANSI_COLOR_YELLOW "(%s) " ANSI_COLOR_GREEN
+                              "seashell 🐚" ANSI_COLOR_YELLOW
+                              ": " ANSI_COLOR_RESET,
+               cwd);
     }
     fflush(stdout);
     // fflush(stdin);

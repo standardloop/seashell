@@ -1,8 +1,8 @@
 #include "./runner.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include <standardloop/logger.h>
 
@@ -34,7 +34,8 @@ extern int RunCommand(char **args)
 
         if (WIFEXITED(status))
         {
-            Log(DEBUG, "Child exited normally with status = %d\n", WEXITSTATUS(status));
+            Log(DEBUG, "Child exited normally with status = %d\n",
+                WEXITSTATUS(status));
         }
         else if (WIFSIGNALED(status))
         {

@@ -1,14 +1,14 @@
+#include <errno.h>
+#include <signal.h> // signal polling for graceful shutdown
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h> // signal polling for graceful shutdown
-#include <stdbool.h>
-#include <errno.h>
 
 #include <standardloop/logger.h>
 
-#include "./signals.h"
 #include "../prompt/prompt.h"
+#include "./signals.h"
 
 static void seaShellSigHandler(int);
 
@@ -59,8 +59,8 @@ static void seaShellSigHandler(int signum)
         Log(WARN, "SIGCHLD received!");
         break;
     case SIGINT:
-        // SIGINT should clear the command buffer and then make the status none 0
-        // Log(WARN, "SIGINT received!");
+        // SIGINT should clear the command buffer and then make the status none
+        // 0 Log(WARN, "SIGINT received!");
         GLOBAL_last_status = 1;
         GLOBAL_signal_clear_buffer = true;
         // FIXME we don't want this here

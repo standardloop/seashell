@@ -1,5 +1,5 @@
-#include <unistd.h>
 #include "./cmds.h"
+#include <unistd.h>
 
 extern int SeashellCD(StringArr *args)
 {
@@ -26,7 +26,9 @@ extern int SeashellCD(StringArr *args)
     char current_pwd[PATH_MAX] = {};
 
     int global_pwd_iterator;
-    for (global_pwd_iterator = 0; GLOBAL_pwd[global_pwd_iterator] != '\0' && global_pwd_iterator < PATH_MAX; global_pwd_iterator++)
+    for (global_pwd_iterator = 0; GLOBAL_pwd[global_pwd_iterator] != '\0' &&
+                                  global_pwd_iterator < PATH_MAX;
+         global_pwd_iterator++)
     {
         current_pwd[global_pwd_iterator] = GLOBAL_pwd[global_pwd_iterator];
     }
@@ -44,9 +46,11 @@ extern int SeashellCD(StringArr *args)
     global_pwd_iterator++;
     int new_full_path_iterator = global_pwd_iterator;
 
-    for (int new_directory_itr = 0; new_directory_itr < length_of_new_directory; new_directory_itr++)
+    for (int new_directory_itr = 0; new_directory_itr < length_of_new_directory;
+         new_directory_itr++)
     {
-        current_pwd[new_full_path_iterator] = args->strings[1][new_directory_itr];
+        current_pwd[new_full_path_iterator] =
+            args->strings[1][new_directory_itr];
         new_full_path_iterator++;
     }
 

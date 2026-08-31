@@ -1,13 +1,13 @@
+#include <errno.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <poll.h>
 
-#include "./seashell.h"
 #include "./cmds/cmds.h"
 #include "./prompt/prompt.h"
 #include "./runner/runner.h"
+#include "./seashell.h"
 #include "./signals/signals.h"
 #include "./terminal/terminal.h"
 
@@ -91,7 +91,8 @@ static inline void moveBackToBeginningOfLine()
     printf("\r");
 }
 
-static void resetEntireLine(char *cmd_buffer, int cmd_cursor_index, int cmd_buffer_curr_length)
+static void resetEntireLine(char *cmd_buffer, int cmd_cursor_index,
+                            int cmd_buffer_curr_length)
 {
     clearEntireLine();
     moveBackToBeginningOfLine();
@@ -120,7 +121,8 @@ extern int GetSeashellLine(char *cmd_buffer)
             if (errno == EINTR)
             {
                 // The signal interrupted poll(3)
-                // We need to clear the buffer and reset the flag that was set in signals/signals.c
+                // We need to clear the buffer and reset the flag that was set
+                // in signals/signals.c
                 if (GLOBAL_signal_clear_buffer)
                 {
                     ClearBuffer(cmd_buffer, COMMAND_BUFFER_SIZE);
@@ -151,15 +153,18 @@ extern int GetSeashellLine(char *cmd_buffer)
                     continue;
                 }
                 // NULL_CHAR 怎麼辦？
-                else if (c == NEWLINE_CHAR || c == NULL_CHAR || cmd_cursor_index == COMMAND_BUFFER_SIZE - 1)
+                else if (c == NEWLINE_CHAR || c == NULL_CHAR ||
+                         cmd_cursor_index == COMMAND_BUFFER_SIZE - 1)
                 {
                     break;
                 }
                 // Handle arrow keys
                 else if (c == ESC_CHAR)
                 {
-                    char arrow_keys_buffer[3] = {0}; // TODO, how large should this be?
-                    if (read(STDIN_FILENO, &arrow_keys_buffer[0], 1) > 0 && read(STDIN_FILENO, &arrow_keys_buffer[1], 1) > 0)
+                    char arrow_keys_buffer[3] = {
+                        0}; // TODO, how large should this be?
+                    if (read(STDIN_FILENO, &arrow_keys_buffer[0], 1) > 0 &&
+                        read(STDIN_FILENO, &arrow_keys_buffer[1], 1) > 0)
                     {
                         if (arrow_keys_buffer[0] == BRACKET_OPEN_CHAR)
                         {
@@ -202,27 +207,33 @@ extern int GetSeashellLine(char *cmd_buffer)
                 {
                     if (cmd_cursor_index > 0)
                     {
-                        deleteAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index - 1);
+                        deleteAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length,
+                                             cmd_cursor_index - 1);
                         cmd_buffer_curr_length--;
                         cmd_cursor_index--;
-                        resetEntireLine(cmd_buffer, cmd_cursor_index, cmd_buffer_curr_length);
+                        resetEntireLine(cmd_buffer, cmd_cursor_index,
+                                        cmd_buffer_curr_length);
                     }
                 }
                 else
                 {
-                    // left arrow or right arrow was used and we need to insert and shift
+                    // left arrow or right arrow was used and we need to insert
+                    // and shift
                     if (cmd_buffer[cmd_cursor_index] != NULL_CHAR)
                     {
-                        insertAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length, cmd_cursor_index, c);
+                        insertAndShiftBuffer(cmd_buffer, cmd_buffer_curr_length,
+                                             cmd_cursor_index, c);
                         cmd_buffer_curr_length++;
                         cmd_cursor_index++;
-                        resetEntireLine(cmd_buffer, cmd_cursor_index, cmd_buffer_curr_length);
+                        resetEntireLine(cmd_buffer, cmd_cursor_index,
+                                        cmd_buffer_curr_length);
                     }
                     // Normal operation
                     else
                     {
                         cmd_buffer[cmd_cursor_index] = c;
-                        putchar(c); // Manual echo since we disabled it in terminal/terminal.c
+                        putchar(c); // Manual echo since we disabled it in
+                                    // terminal/terminal.c
                         cmd_buffer_curr_length++;
                         cmd_cursor_index++;
                     }

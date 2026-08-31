@@ -1,10 +1,10 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include "./cmds.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
-#include "./cmds.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // TODO
 // flags/arguments
