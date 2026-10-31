@@ -1,11 +1,14 @@
 ---
 version: "3"
 
+includes:
+  # c: https://raw.githubusercontent.com/standardloop/taskfiles/refs/heads/main/c.yml # can pin in future
+  c: ../taskfiles/c.yml
+
 vars:
   CC: clang
   CC_FLAGS: "-Werror -Wextra -Wall -Wfree-nonheap-object -std=c17"
   EXECUTABLE_NAME: seashell
-  DYN_LIBS_USED_PATH: "-I/usr/local/include -L/usr/local/lib/standardloop"
   DYN_LIBS_USED: "-lstandardloop-logger -lstandardloop-util"
   SOURCE_FILES:
     - global.c
@@ -31,45 +34,10 @@ tasks:
       # - run # we don't want task to process our process
 
   dependencies:
-    deps:
-      - dependencies:logger
-      - dependencies:util
-
-  dependencies:helper-task:
-    internal: true
+    desc: "Downloads C program dependencies."
     cmds:
-      - mkdir -p dependencies/tmp-{{.DYLIB_NAME}}
-      - cd dependencies/tmp-{{.DYLIB_NAME}}
-      - curl -O -J -L https://github.com/standardloop/{{.REPO_NAME}}/releases/download/v{{.DYLIB_VERSION}}/libstandardloop-{{.DYLIB_NAME}}.zip
-      - unzip libstandardloop-{{.DYLIB_NAME}}.zip
-      - sudo mkdir -p /usr/local/lib/standardloop/
-      - sudo mkdir -p /usr/local/include/standardloop/
-      - sudo mv libstandardloop-{{.DYLIB_NAME}}.dylib /usr/local/lib/standardloop/
-      - sudo mv {{.DYLIB_NAME}}.h /usr/local/include/standardloop/ && rm libstandardloop-{{.DYLIB_NAME}}.zip
-
-  dependencies:logger:
-    vars:
-      REPO_NAME: c-logger
-      DYLIB_VERSION: 0.0.17
-      DYLIB_NAME: logger
-    cmds:
-      - sudo -v
-      - task: dependencies:helper-task
-    status:
-      - otool -L /usr/local/lib/standardloop/libstandardloop-{{.DYLIB_NAME}}.dylib | head -n 2 | tail -n 1 | grep "current version {{.DYLIB_VERSION}}"
-      - cat /usr/local/include/standardloop/{{.DYLIB_NAME}}.h | grep "STANDARDLOOP_{{.DYLIB_NAME | upper}}_H_VERSION \"{{.DYLIB_VERSION}}\""
-
-  dependencies:util:
-    vars:
-      REPO_NAME: c-util
-      DYLIB_VERSION: 0.0.8
-      DYLIB_NAME: util
-    cmds:
-      - sudo -v
-      - task: dependencies:helper-task
-    status:
-      - otool -L /usr/local/lib/standardloop/libstandardloop-{{.DYLIB_NAME}}.dylib | head -n 2 | tail -n 1 | grep "current version {{.DYLIB_VERSION}}"
-      - cat /usr/local/include/standardloop/{{.DYLIB_NAME}}.h | grep "STANDARDLOOP_{{.DYLIB_NAME | upper}}_H_VERSION \"{{.DYLIB_VERSION}}\""
+      - task: c:dependencies:logger
+      - task: c:dependencies:util
 
   build:
     deps:

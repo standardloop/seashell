@@ -134,7 +134,14 @@ void seaShellNoInteractive()
 
 int main(int argc, char **argv)
 {
-    InitLogger(TRACE, STANDARD_FMT, false, true, true, true);
+    struct LoggerOptions options = {.log_level = TRACE,
+                                    .log_type = STANDARD_FMT,
+                                    .timestamp = false,
+                                    .flush = true,
+                                    .newline = true,
+                                    .color = true,
+                                    .display_level = true};
+    InitLogger(options);
 
     for (int i = 0; i < argc; i++)
     {

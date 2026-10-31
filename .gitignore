@@ -61,3 +61,6 @@ lab.c
 lab
 TODO.md
 FINDINGS.md
+dependencies
+*.zip
+*.dylib
